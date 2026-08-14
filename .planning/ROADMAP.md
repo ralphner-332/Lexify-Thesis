@@ -28,8 +28,8 @@ YAWA is an academic research prototype evaluating written essay answers from law
 **Plans**: 2 plans
 
 Plans:
-- [ ] 01-01: Backend architecture (Express, TypeScript, Prisma SQLite schema with immutable audit records, JWT auth, RBAC middleware, question/rubric/agent-version CRUD APIs)
-- [ ] 01-02: Frontend architecture (React Vite, Tailwind CSS, role-based dashboards, question/reference answer manager, rubric builder, agent component snapshot UI, disclaimers)
+- [x] 01-01: Backend architecture (Express, TypeScript, Prisma SQLite schema with immutable audit records, JWT auth, RBAC middleware, question/rubric/agent-version CRUD APIs)
+- [x] 01-02: Frontend architecture (React Vite, Tailwind CSS, role-based dashboards, question/reference answer manager, rubric builder, agent component snapshot UI, disclaimers)
 
 ### Phase 2: Semantic AI Evaluation Engine & Student Assessment Portal
 **Goal**: Deliver the AI evaluation engine evaluating meaning, legal concepts, completeness, reasoning, and acceptable alternative expressions according to approved rubrics (not exact keyword matching), and the student assessment interface.
