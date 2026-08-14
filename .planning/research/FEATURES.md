@@ -6,46 +6,51 @@
 
 ## Feature Analysis
 
-### Table Stakes (Must-Have Core)
+### Table Stakes (Must-Have Core Research Capabilities)
 
 These capabilities are mandatory to conduct the academic research study on Criminal Law I essay evaluations.
 
 | Feature | Complexity | Why Essential |
 |---------|------------|---------------|
-| Role-Based Access Control (Student, Expert, Admin) | Medium | Separates student submission, double-blind expert grading, and admin management |
-| Academic & Legal Research Disclaimers | Low | Legal/ethical requirement stating system is a research prototype, not official bar/course grading |
-| Question & Legal Reference Answer Repository | Medium | Manages Criminal Law I questions, model answers, legal elements, and statutory citations |
-| Configurable Scoring Rubric Engine | Medium | Multi-criteria scoring (Legal Accuracy, Legal Elements, Reasoning, Application, Terminology) |
-| Gemini AI Evaluation Service with Structured Schema | High | Generates numerical criteria scores, IRAC legal rationale, missing elements, and confidence rating |
-| Student Assessment Portal | Medium | Single-session assessment interface for answering essay questions and reviewing returned feedback |
-| Double-Blind Expert Evaluation Portal | High | Allows legal experts to score student answers against reference answers WITHOUT seeing AI scores (V1-V3) |
-| Distributed Expert Assignment Workflow | Medium | Allocates student answers across expert evaluators (1-2 experts per answer) |
-| AI vs Expert Side-by-Side Comparison Module | High | Visual comparison matrix showing AI score vs expert score, score delta, and gap categorization |
-| Iterative Agent Versioning (V1 → V2 → V3) | High | Allows researcher to capture prompt refinements, compare performance, and preserve version snapshots |
-| Immutable Research Data & Audit Trail | Medium | Ensures historical evaluation data, deltas, and scores cannot be overwritten or altered |
-| Export & Research Reporting (CSV/JSON/PDF) | Medium | Enables researchers to export complete evaluation datasets for statistical analysis and thesis documentation |
+| Role-Based Access Control (Student, Expert, Admin) | Medium | Enforces strict operational boundaries between student test-taking, double-blind expert grading, and researcher configuration |
+| Academic & Legal Research Disclaimers | Low | Legal/ethical requirement stating system is an academic research prototype, not an official grading/legal tool |
+| Predetermined Question & Reference Material Management | Medium | Manages predetermined Criminal Law I questions, model reference answers, statutory elements, and reference materials (no AI-generated questions) |
+| Configurable Scoring Rubric Engine | Medium | Allows researcher to configure criteria, weightings, and maximum scores without code changes |
+| Agent Component Versioning Manager (V1 → V2 → V3) | High | Manages snapshots of AI skills, instructions, rubrics, evaluation patterns, and reference configs; ensures past versions are never overwritten |
+| Semantic AI Evaluation Engine (Non-Keyword) | High | Evaluates legal concepts, completeness, reasoning, and acceptable alternative expressions according to approved rubric without inventing authorities |
+| Structured AI Evaluation Output | Medium | Produces numerical score, max score, scoring basis, criterion breakdown, missing elements, strengths, improvement areas, confidence flag |
+| Student Assessment Portal | Medium | Single-session test taking on predetermined questions, essay submission, and diagnostic feedback viewing |
+| Double-Blind Expert Independent Evaluation Portal | High | Legal experts score student answers against reference answers WITHOUT seeing AI scores or reasoning (iterations 1–3) |
+| AI vs Expert Comparison Matrix | High | Side-by-side comparison of AI vs Expert scores and scoring bases, identifying score/reasoning differences, missing elements, weighting gaps, etc. |
+| Structured 6-Question Refinement Documentation | Medium | Standardizes researcher documentation of conflicts, expert feedback, component changes, and rationale |
+| Post-V3 Final Expert Evaluation Module | Medium | Allows experts to review unblinded AI evaluations to rate agreement, verify reasoning correctness, and recommend adjustments |
+| Configurable Usability & Capability Questionnaires | Medium | Separate post-V3 surveys for student user acceptance and expert assessment capability |
+| Research Data Preservation & Audit Logging | High | Append-only immutability for all historical evaluations, version snapshots, comparison findings, and refinement logs |
+| Complete Research Data Export (CSV/JSON/PDF) | Medium | Enables researchers to export complete evaluation datasets and reports for thesis and statistical analysis |
+| Strict Demo Data Isolation (`isDemo: true`) | Low | Completely isolates test/demo records from research statistics and exports |
 
-### Differentiators (Research Enhancements)
+### Unresolved / Configurable Scope (Placeholders until Adviser Approval)
 
-These features provide high academic value and deeper diagnostic insights.
-
-| Feature | Complexity | Value Proposition |
-|---------|------------|-------------------|
-| Post-V3 Final Evaluation Module | High | Experts review AI scores and reasoning, providing formal agreement ratings and qualitative feedback |
-| Student Usability Questionnaire (SUS/Likert) | Medium | Computes weighted mean and standard deviation for student user acceptance assessment |
-| Expert Assessment Capability Questionnaire | Medium | Measures expert perception of AI accuracy, fairness, and utility with statistical summaries |
-| Inter-Rater Reliability & Delta Analytics | High | Real-time calculation of score variances, agreement rates, and disagreement categorizations |
-| Low-Confidence Fallback Flagging | Medium | Automatically flags answers where AI confidence is low for mandatory expert manual review |
+| Item | Status | Configuration Approach |
+|------|--------|------------------------|
+| Exact number of student respondents | Unresolved / Configurable | System supports variable cohort sizes |
+| Exact number of expert evaluators | Unresolved / Configurable | Flexible assignment configuration |
+| Exact Criminal Law I coverage & questions | Unresolved / Configurable | Managed dynamically via Admin Question CRUD |
+| Exact scoring rubric criteria & weights | Unresolved / Configurable | Managed dynamically via Admin Rubric Builder |
+| Exact questionnaire items (SUS/Likert) | Unresolved / Configurable | Managed dynamically via Admin Questionnaire Builder |
+| Exact AI model/provider | Unresolved / Configurable | Configurable via environment variables and AI settings |
+| Exact statistical tests | Unresolved / Configurable | Standard descriptive metrics (weighted mean, SD, deltas) provided with extensible analytics |
+| Exact final evaluation procedure & title | Unresolved / Configurable | Configurable metadata |
 
 ### Anti-Features (Deliberately Excluded)
 
 | Feature | Reason for Exclusion |
 |---------|----------------------|
-| Generative Cheating / Answer Rewriting | Violates academic integrity; YAWA is an evaluator/diagnostic system, not a ghostwriter |
+| Generative Cheating / Answer Rewriting | Violates academic integrity; YAWA is an evaluation/diagnostic tool, not a ghostwriter |
 | Runtime Prompt Auto-Tuning | Destroys experimental control; version updates must be deliberate and researcher-controlled |
 | Free-Form Legal Chatbot | Distracts from controlled Criminal Law I rubric assessment |
-| Cloud Multi-Tenant SaaS | Unnecessary for localized university research study |
+| Dynamic Question Generation by AI | Questions must be predetermined and human-vetted |
+| Multi-Tenant Cloud SaaS | Unnecessary for localized university research study |
 
 ---
 *Features research for: YAWA (Yet Another Written-Answer AI Agent)*
-*Researched: 2026-08-15*

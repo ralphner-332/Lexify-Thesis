@@ -3,9 +3,9 @@
 
 ### YAWA — Yet Another Written-Answer AI Agent
 
-A locally-deployed academic research prototype that evaluates written essay answers from FSUU College of Law students in Criminal Law I. The system compares structured AI-generated evaluations against independent expert legal assessments across three iterative agent versions (V1 → V2 → V3), then conducts a final evaluation measuring AI assessment capability, expert agreement, and student user acceptance.
+A locally-deployed academic research prototype supporting an empirical study on developing and iteratively refining an AI Agent that evaluates written essay answers from FSUU College of Law students in Criminal Law I. The system compares structured AI evaluations against independent double-blind expert legal assessments across three iterative agent versions (V1 → V2 → V3), conducting gap analysis using a 6-question refinement framework, followed by post-V3 final expert evaluation, student usability testing, and comprehensive research data export.
 
-*Disclaimer: This is a research prototype — not a replacement for a law professor, lawyer, formal examination, or official institutional grading system.*
+*Disclaimer: This is strictly an academic research prototype — not a replacement for a law professor, lawyer, formal examination, official institutional grading system, or legal advice.*
 
 **Core Value:** Enable rigorous, reproducible academic research comparing structured AI evaluations against expert legal assessments, iteratively refining evaluation quality across three agent versions while preserving every piece of historical research data as immutable evidence.
 <!-- GSD:project-end -->
@@ -14,7 +14,7 @@ A locally-deployed academic research prototype that evaluates written essay answ
 ## Technology Stack
 
 - **Backend:** Node.js, Express, TypeScript, Prisma ORM, SQLite
-- **AI Integration:** Google Gemini API with Zod schema validation
+- **AI Integration:** Google Gemini API / Configurable LLM service with Zod schema validation
 - **Frontend:** React, Vite, Tailwind CSS, Lucide React, Recharts
 - **Export & Statistics:** papaparse/json2csv, jspdf, simple-statistics
 - **Authentication:** JWT, bcryptjs (Role-based: Student, Expert Evaluator, Admin/Researcher)
@@ -24,8 +24,8 @@ A locally-deployed academic research prototype that evaluates written essay answ
 ## Conventions
 
 - Use TypeScript with strict typing across backend models, API routes, and frontend components.
-- Ground all legal evaluations in statutory elements and model reference answers.
-- Maintain append-only immutability for all research evaluation records and version snapshots.
+- Ground all legal evaluations in statutory elements and model reference answers; evaluate meaning, concepts, completeness, and reasoning (not keyword-only matching).
+- Maintain append-only immutability for all research evaluation records, version snapshots, and refinement notes.
 - Keep test/demo records strictly separated using `isDemo: true`.
 <!-- GSD:conventions-end -->
 
@@ -33,8 +33,8 @@ A locally-deployed academic research prototype that evaluates written essay answ
 ## Architecture
 
 - **Frontend:** React (Vite SPA) hosting Student Assessment Portal, Double-Blind Expert Portal, and Researcher Admin Dashboard.
-- **Backend:** Node.js/Express REST API orchestrating auth, assessment submissions, Gemini evaluation calls, comparison metrics, and research exports.
-- **Database:** SQLite managed via Prisma ORM for zero-config local research persistence.
+- **Backend:** Node.js/Express REST API orchestrating auth, assessment submissions, AI evaluation calls, comparison metrics, 6-question refinement logs, and research exports.
+- **Database:** SQLite managed via Prisma ORM for zero-config local research persistence with immutable audit trails.
 <!-- GSD:architecture-end -->
 
 <!-- GSD:skills-start source:skills/ -->

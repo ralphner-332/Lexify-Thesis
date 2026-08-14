@@ -7,46 +7,46 @@
 
 Requirements for initial release. Each maps to roadmap phases.
 
-### Foundation & Authentication (AUTH / CORE)
+### Foundation, RBAC & Core Research Entities (CORE / AUTH)
 
-- [ ] **AUTH-01**: User can log in with role-based credentials (Student, Expert Evaluator, Admin/Researcher).
-- [ ] **AUTH-02**: System enforces role-based access control (RBAC) across all API endpoints and frontend routes.
-- [ ] **CORE-01**: System displays prominent academic and legal disclaimers on all portals stating it is a research prototype.
-- [ ] **CORE-02**: System provides database schema with strict immutable historical records and isolation of demo/test data via `isDemo` flags.
+- [ ] **AUTH-01**: User can log in with role-based credentials (Student, Expert Evaluator, Admin/Researcher) with server-enforced RBAC.
+- [ ] **CORE-01**: System displays prominent academic and legal disclaimers on all portals stating it is an academic research prototype with no official grading or legal authority.
+- [ ] **CORE-02**: Database schema enforces append-only immutability for all historical evaluations, version snapshots, comparison findings, and refinement logs.
+- [ ] **CORE-03**: System provides complete separation of demo/test data from research data via `isDemo` flags, preventing demo records from appearing in statistics or exports.
 
-### Question & Rubric Management (RUBRIC / QUESTION)
+### Question, Reference Materials & Rubric Management (QUES / RUBR / VERS)
 
-- [ ] **QUES-01**: Researcher can create and manage Criminal Law I questions with model reference answers and statutory elements.
-- [ ] **RUBR-01**: Researcher can configure scoring rubrics with criteria (Legal Accuracy, Legal Elements, Reasoning, Application, Terminology) and weightings.
-- [ ] **VERS-01**: Researcher can manage multi-version AI Agent configurations (V1 baseline → V2 refined → V3 refined) with immutable version snapshots.
+- [ ] **QUES-01**: Admin/Researcher can manage predetermined Criminal Law I questions, model reference answers, statutory legal elements, and reference materials (no dynamically AI-generated questions).
+- [ ] **RUBR-01**: Admin/Researcher can configure scoring rubrics with customizable criteria (e.g., Legal Accuracy, Legal Elements, Reasoning, Application, Terminology), weightings, and maximum scores.
+- [ ] **VERS-01**: Admin/Researcher can manage Agent components (AI skills, AI instructions, scoring rubrics, evaluation patterns, reference materials/configs) and create immutable version snapshots (V1, V2, V3).
+- [ ] **VERS-02**: System ensures Version 1 is not overwritten when Version 2 is created, Version 2 is not overwritten when Version 3 is created, and every AI evaluation explicitly records the Agent Version that produced it.
 
-### Assessment & AI Evaluation Engine (STUDENT / AI)
+### Student Assessment & AI Evaluation Engine (STUD / AI)
 
-- [ ] **STUD-01**: Student can view available assessment session and answer all predetermined Criminal Law I questions in a single session.
-- [ ] **STUD-02**: Student can submit written essay answers and receive confirmation.
-- [ ] **AI-01**: System invokes Google Gemini API with strict structured JSON schema to evaluate student answers against reference rubrics.
-- [ ] **AI-02**: AI evaluation produces numerical criterion scores, total score, IRAC-grounded legal rationale, missing elements, and confidence score.
-- [ ] **AI-03**: System flags low-confidence AI evaluations for mandatory expert review.
-- [ ] **STUD-03**: Student can view diagnostic evaluation feedback and scores tailored for student learning.
+- [ ] **STUD-01**: Student can view assigned/available assessment, answer predetermined Criminal Law I questions in a single session, and submit written answers.
+- [ ] **AI-01**: AI Evaluation Engine evaluates student answers based on meaning, legal concepts, completeness, reasoning, and acceptable alternative expressions according to the approved rubric (not exact keyword matching, and zero invented authorities).
+- [ ] **AI-02**: AI Evaluation Engine produces structured output: numerical score, maximum score, scoring basis/reason, criterion-level scores, criterion-level reasoning, strengths, missing elements, areas for improvement, and confidence/review flag where appropriate.
+- [ ] **STUD-02**: Student can view returned diagnostic feedback and scores appropriate for student learning.
 
-### Double-Blind Expert Evaluation (EXPERT)
+### Double-Blind Expert Independent Evaluation (EXPT)
 
-- [ ] **EXPT-01**: System distributes student answers among expert evaluators (1–2 experts per answer).
-- [ ] **EXPT-02**: Expert Evaluator views question, model reference answer, and student answer without seeing AI scores (double-blind).
-- [ ] **EXPT-03**: Expert Evaluator scores student answer across rubric criteria with detailed qualitative legal reasoning.
+- [ ] **EXPT-01**: Expert Evaluator views assigned student answers, question, and reference materials without seeing AI-generated scores or reasoning during iterations 1–3.
+- [ ] **EXPT-02**: Expert Evaluator independently evaluates student answers, providing numerical score, scoring basis/reason, criterion-level scores, and qualitative comments.
 
-### Comparison Matrix & Iteration Management (COMP / ITER)
+### AI vs Expert Comparison & 6-Question Refinement (COMP / ITER)
 
-- [ ] **COMP-01**: Researcher can view side-by-side comparison matrix of AI score vs Expert score with automated delta calculations.
-- [ ] **COMP-02**: Researcher can annotate and categorize disagreement types (e.g., Strict Terminology, Reasoning Depth, Missing Element Detection).
-- [ ] **ITER-01**: Researcher can execute iteration transitions (V1 → V2 → V3), creating new agent snapshots while locking past evaluation data.
+- [ ] **COMP-01**: Researcher can view side-by-side comparison of AI score vs Expert score AND AI scoring basis vs Expert scoring basis, highlighting score deltas, reasoning differences, missing elements, interpretation gaps, weighting issues, alternative expressions, and partial-credit issues.
+- [ ] **COMP-02**: System preserves both AI and Expert evaluations as valid data points (recognizing a score difference does not automatically mean the AI is wrong).
+- [ ] **ITER-01**: Researcher can document gap analysis using the structured 6-question framework: (1) What was wrong/inconsistent? (2) Why did conflict occur? (3) What did expert say? (4) What should be changed? (5) Which Agent component should be changed? (6) Why should it be changed?
+- [ ] **ITER-02**: Researcher can incorporate approved refinements into the next Agent Version (V1 → V2 → V3) while locking past iteration records.
 
-### Final Evaluation, Usability & Analytics (EVAL / REPORT)
+### Post-V3 Final Evaluation & Usability Assessment (FEVL / USAB)
 
-- [ ] **FEVL-01**: Post-V3 Final Evaluation module allows experts to review unblinded AI scores and provide formal agreement ratings and critique.
-- [ ] **USAB-01**: Student and Expert usability questionnaires (SUS / Likert scale) collect user acceptance and capability data.
-- [ ] **STAT-01**: System computes statistical metrics (weighted mean, standard deviation, inter-rater score deltas).
-- [ ] **REPO-01**: Researcher can export complete research datasets (questions, answers, evaluations, comparisons, metrics) to CSV, JSON, and PDF reports.
+- [ ] **FEVL-01**: Post-V3 Final Evaluation module allows Expert to review Question, Student Answer, AI Score, AI Scoring Basis, and AI Criterion Scores to indicate agreement/disagreement, reasoning correctness, errors, improvement suggestions, and recommended scores (separate from independent scoring).
+- [ ] **USAB-01**: Configurable Student Usability/User Acceptance questionnaire collects post-V3 student feedback.
+- [ ] **USAB-02**: Configurable Expert Assessment Capability questionnaire collects post-V3 expert evaluation of the AI Agent.
+- [ ] **STAT-01**: System calculates descriptive statistics (score differences, agreement rates, weighted mean, standard deviation) across iterations.
+- [ ] **REPO-01**: Researcher can export complete research datasets (questions, answers, version snapshots, evaluations, comparisons, gap analyses, refinement decisions, survey responses, statistics) to CSV, JSON, and PDF reports.
 
 ## v2 Requirements
 
@@ -54,9 +54,8 @@ Deferred to future release. Tracked but not in current roadmap.
 
 ### Real-Time & Advanced Extensions
 
-- **NOTF-01**: Real-time email and in-app notifications for assessment deadlines and expert assignment alerts.
-- **AUDT-01**: Detailed visual diff engine comparing student answer text against statutory element phrases.
-- **ANLT-01**: Longitudinal cohort progression graphs tracking student improvement across multiple academic terms.
+- **NOTF-01**: Automated email/in-app notifications for assessment schedules and expert evaluation deadlines.
+- **ANLT-01**: Multi-semester longitudinal cohort tracking for student legal writing development.
 
 ## Out of Scope
 
@@ -66,8 +65,8 @@ Explicitly excluded. Documented to prevent scope creep.
 |---------|--------|
 | Official Grading / Bar Exam Tool | Research prototype only; not certified for institutional grading or legal certification |
 | Automated Answer Rewriting / Ghostwriting | Violates academic integrity; YAWA evaluates and diagnoses rather than rewrites |
-| Runtime Prompt Auto-Tuning | Destroys experimental control; agent versions must be explicitly managed snapshots |
-| Free-Form Legal Chatbot | Distracts from rubric-grounded Criminal Law I evaluation |
+| Autonomous Prompt Self-Tuning | Destroys experimental control; agent versions must be explicitly managed snapshots |
+| Free-Form Legal Chatbot / Dynamic Question Generation | Distracts from rubric-grounded Criminal Law I evaluation |
 | Multi-tenant Cloud SaaS | Out of scope for localized researcher deployment |
 
 ## Traceability
@@ -77,26 +76,26 @@ Which phases cover which requirements. Updated during roadmap creation.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | AUTH-01 | Phase 1 | Pending |
-| AUTH-02 | Phase 1 | Pending |
 | CORE-01 | Phase 1 | Pending |
 | CORE-02 | Phase 1 | Pending |
+| CORE-03 | Phase 1 | Pending |
 | QUES-01 | Phase 1 | Pending |
 | RUBR-01 | Phase 1 | Pending |
 | VERS-01 | Phase 1 | Pending |
+| VERS-02 | Phase 1 | Pending |
 | STUD-01 | Phase 2 | Pending |
-| STUD-02 | Phase 2 | Pending |
 | AI-01 | Phase 2 | Pending |
 | AI-02 | Phase 2 | Pending |
-| AI-03 | Phase 2 | Pending |
-| STUD-03 | Phase 2 | Pending |
+| STUD-02 | Phase 2 | Pending |
 | EXPT-01 | Phase 3 | Pending |
 | EXPT-02 | Phase 3 | Pending |
-| EXPT-03 | Phase 3 | Pending |
 | COMP-01 | Phase 3 | Pending |
 | COMP-02 | Phase 3 | Pending |
 | ITER-01 | Phase 3 | Pending |
+| ITER-02 | Phase 3 | Pending |
 | FEVL-01 | Phase 4 | Pending |
 | USAB-01 | Phase 4 | Pending |
+| USAB-02 | Phase 4 | Pending |
 | STAT-01 | Phase 4 | Pending |
 | REPO-01 | Phase 4 | Pending |
 
@@ -107,4 +106,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-08-15*
-*Last updated: 2026-08-15 after initial definition*
+*Last updated: 2026-08-15 after research requirements alignment*
