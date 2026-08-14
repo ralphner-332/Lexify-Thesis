@@ -82,3 +82,76 @@ export interface AuditLog {
   isDemo: boolean;
   createdAt: string;
 }
+
+// --- Phase 2 Session & Evaluation Types ---
+
+export interface StudentQuestionItem {
+  id: string;
+  code: string;
+  title: string;
+  scenario: string;
+  orderIndex: number;
+  draftAnswer: string;
+  isAnswered: boolean;
+}
+
+export interface AssessmentSession {
+  id: string;
+  studentId: string;
+  status: 'IN_PROGRESS' | 'SUBMITTED';
+  startedAt: string;
+  submittedAt?: string | null;
+  questions: StudentQuestionItem[];
+}
+
+export interface SessionReviewChecklist {
+  session: AssessmentSession;
+  totalQuestions: number;
+  answeredCount: number;
+  unansweredCount: number;
+  allAnswered: boolean;
+}
+
+export interface CriterionScore {
+  criterionName: string;
+  score: number;
+  maxPoints: number;
+  reasoning: string;
+}
+
+export interface StudentEvaluationFeedback {
+  id: string;
+  questionId: string;
+  numericalScore: number;
+  maxScore: number;
+  scoringBasis: string;
+  criterionScores: CriterionScore[];
+  strengths: string[];
+  missingElements: string[];
+  areasForImprovement: string[];
+}
+
+export interface AdminEvaluation {
+  id: string;
+  sessionId: string;
+  studentId: string;
+  studentName?: string;
+  studentEmail?: string;
+  questionId: string;
+  agentVersionId: string;
+  questionSnapshot: any;
+  modelConfigSnapshot: any;
+  rubricSnapshot: any;
+  studentAnswer: string;
+  numericalScore: number;
+  maxScore: number;
+  scoringBasis: string;
+  criterionScores: CriterionScore[];
+  strengths: string[];
+  missingElements: string[];
+  areasForImprovement: string[];
+  confidenceScore: number;
+  reviewFlags: string[];
+  isDemo: boolean;
+  createdAt: string;
+}

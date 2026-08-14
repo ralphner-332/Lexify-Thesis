@@ -63,7 +63,7 @@ export const AgentVersionConsole: React.FC = () => {
     setActionLoading(true);
     try {
       const res = await api.agentVersions.lock(selectedVersion.id);
-      setMessage({ text: res.message, type: 'success' });
+      setMessage({ text: res.message || 'Agent version locked successfully', type: 'success' });
       await loadVersions();
     } catch (err: any) {
       setMessage({ text: err.message || 'Failed to lock agent version', type: 'error' });
@@ -77,7 +77,7 @@ export const AgentVersionConsole: React.FC = () => {
     setActionLoading(true);
     try {
       const res = await api.agentVersions.activate(selectedVersion.id);
-      setMessage({ text: res.message, type: 'success' });
+      setMessage({ text: res.message || 'Agent version activated successfully', type: 'success' });
       await loadVersions();
     } catch (err: any) {
       setMessage({ text: err.message || 'Failed to activate agent version', type: 'error' });

@@ -1,111 +1,182 @@
 import React, { useState, useEffect } from 'react';
-import { api } from '../../api/client';
-import { Question } from '../../types';
-import { BookOpen, FileText, AlertCircle, Clock } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { api } from '../../api/client';
+import { Question, AssessmentSession } from '../../types';
+import {
+  BookOpen,
+  Sparkles,
+  ArrowRight,
+  CheckCircle,
+} from 'lucide-react';
 
 export const StudentDashboard: React.FC = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [questions, setQuestions] = useState<Question[]>([]);
+  const [activeSession, setActiveSession] = useState<AssessmentSession | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    async function loadQuestions() {
+    const loadDashboardData = async () => {
       try {
-        const res = await api.questions.list();
-        setQuestions(res.data);
+        setLoading(true);
+        const [qRes, sessRes] = await Promise.all([
+          api.questions.getAll(),
+          api.sessions.getActive().catch(() => ({ data: null })),
+        ]);
+        setQuestions(qRes.data);
+        if (sessRes && sessRes.data) {
+          setActiveSession(sessRes.data);
+        }
       } catch (err: any) {
-        setError(err.message || 'Failed to fetch assigned questions');
+        setError(err.message || 'Failed to load dashboard data');
       } finally {
         setLoading(false);
       }
-    }
-    loadQuestions();
+    };
+    loadDashboardData();
   }, []);
+
+  const isSubmitted = activeSession?.status === 'SUBMITTED';
 
   return (
     <div className="space-y-6">
       {/* Student Welcome Header */}
-      <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Student Assessment Portal</h1>
-          <p className="text-sm text-slate-600 mt-1">
-            Welcome back, <strong>{user?.name}</strong>. Review your assigned Criminal Law I analytical essay items below.
+          <div className="flex items-center space-x-2">
+            <span className="px-2.5 py-0.5 bg-indigo-100 text-indigo-800 text-xs font-bold rounded-full">
+              Student Assessment Portal
+            </span>
+            {user?.isDemo && (
+              <span className="px-2 py-0.5 bg-amber-100 text-amber-800 text-[11px] font-bold rounded">
+                Demo Student Account
+              </span>
+            )}
+          </div>
+          <h1 className="text-2xl font-bold text-slate-900 mt-1">
+            Welcome, {user?.name || 'Law Student'}
+          </h1>
+          <p className="text-slate-600 text-xs mt-1">
+            FSUU College of Law — Criminal Law I Written Essay Assessment
           </p>
         </div>
-        <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-xl text-xs font-semibold border border-blue-200 w-fit">
-          <BookOpen className="w-4 h-4" />
-          <span>FSUU College of Law • Criminal Law I</span>
-        </div>
-      </div>
 
-      {/* Phase notice */}
-      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start gap-3 text-blue-900 text-sm">
-        <Clock className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+        {/* Primary Action Button */}
         <div>
-          <h2 className="font-bold text-blue-950">Foundation Phase Active (Phase 1)</h2>
-          <p className="text-xs text-blue-800 mt-0.5">
-            Predetermined questions and scoring rubrics are configured by researchers. Interactive essay submission and AI evaluation engine will activate in <strong>Phase 2</strong>.
-          </p>
-        </div>
-      </div>
-
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-2 text-red-700 text-sm">
-          <AlertCircle className="w-5 h-5" />
-          <span>{error}</span>
-        </div>
-      )}
-
-      {loading ? (
-        <div className="text-center py-12 text-slate-500">Loading predetermined questions...</div>
-      ) : questions.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-2xl border border-dashed border-slate-300 text-slate-500">
-          No active questions currently assigned.
-        </div>
-      ) : (
-        <div className="grid gap-6">
-          {questions.map((q, idx) => (
-            <div
-              key={q.id}
-              className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-4 hover:border-slate-300 transition-colors"
+          {isSubmitted ? (
+            <button
+              onClick={() => navigate('/student/assessment/feedback')}
+              className="flex items-center space-x-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm shadow-md shadow-emerald-200 transition"
             >
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <div className="flex items-center gap-2">
-                  <span className="px-2.5 py-1 bg-slate-900 text-white rounded-lg text-xs font-bold font-mono">
-                    {q.code}
-                  </span>
-                  <h2 className="font-bold text-slate-900 text-lg">
-                    Item {idx + 1}: {q.title}
-                  </h2>
-                </div>
-                <span className="text-xs font-medium text-slate-500 flex items-center gap-1">
-                  <FileText className="w-3.5 h-3.5" /> Predetermined Research Item
-                </span>
-              </div>
-
-              {/* Scenario Only - Reference Answer is stripped by server-side DTO */}
-              <div className="bg-slate-50 rounded-xl p-5 border border-slate-100">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
-                  Factual Scenario
-                </h3>
-                <p className="legal-text text-slate-800 text-sm whitespace-pre-wrap">{q.scenario}</p>
-              </div>
-
-              <div className="flex justify-end pt-2">
-                <button
-                  disabled
-                  className="px-4 py-2 bg-slate-100 text-slate-400 rounded-xl text-xs font-semibold cursor-not-allowed border border-slate-200 flex items-center gap-1.5"
-                >
-                  <Clock className="w-3.5 h-3.5" />
-                  Essay Response Submission (Unlocks in Phase 2)
-                </button>
-              </div>
-            </div>
-          ))}
+              <CheckCircle className="w-5 h-5" />
+              <span>View Diagnostic Feedback & Scores</span>
+            </button>
+          ) : (
+            <button
+              onClick={() => navigate('/student/assessment')}
+              className="flex items-center space-x-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm shadow-md shadow-indigo-200 transition"
+            >
+              <Sparkles className="w-5 h-5" />
+              <span>{activeSession ? 'Resume Assessment Session' : 'Start Assessment Session'}</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          )}
         </div>
-      )}
+      </div>
+
+      {/* Assessment Overview */}
+      <div className="bg-slate-900 text-white rounded-xl p-6 shadow-sm">
+        <div className="flex items-center space-x-2 text-indigo-400 font-bold text-xs uppercase tracking-wider mb-2">
+          <BookOpen className="w-4 h-4" />
+          <span>Assessment Information & Instructions</span>
+        </div>
+        <h2 className="text-lg font-bold text-slate-100 mb-2">
+          Philippine Criminal Law I Analytical Essay Exam
+        </h2>
+        <p className="text-slate-300 text-xs leading-relaxed max-w-3xl">
+          This single-session exam evaluates your written legal reasoning, statutory element identification, and application of the Revised Penal Code (Book I) using the IRAC (Issue, Rule, Analysis, Conclusion) method. Your responses are evaluated semantically by the AI Agent.
+        </p>
+
+        <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+          <div className="bg-slate-800/80 p-3 rounded-lg border border-slate-700">
+            <span className="text-slate-400 block mb-0.5">Exam Format</span>
+            <strong className="text-slate-100">Multi-Step Question Wizard</strong>
+          </div>
+          <div className="bg-slate-800/80 p-3 rounded-lg border border-slate-700">
+            <span className="text-slate-400 block mb-0.5">Evaluation Method</span>
+            <strong className="text-slate-100">Semantic Legal Reasoning</strong>
+          </div>
+          <div className="bg-slate-800/80 p-3 rounded-lg border border-slate-700">
+            <span className="text-slate-400 block mb-0.5">Session Status</span>
+            <strong className={isSubmitted ? 'text-emerald-400' : 'text-amber-400'}>
+              {isSubmitted ? 'Submitted & Evaluated' : activeSession ? 'In Progress' : 'Not Started'}
+            </strong>
+          </div>
+        </div>
+      </div>
+
+      {/* Assigned Questions Scenarios List */}
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-bold text-slate-900">
+            Assigned Predetermined Scenarios ({questions.length})
+          </h2>
+          <span className="text-xs text-slate-500">
+            All questions are mandatory
+          </span>
+        </div>
+
+        {loading ? (
+          <div className="text-center py-8 text-slate-500">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto mb-2"></div>
+            Loading assigned questions...
+          </div>
+        ) : error ? (
+          <div className="p-4 bg-red-50 text-red-700 rounded-lg text-sm">{error}</div>
+        ) : questions.length === 0 ? (
+          <div className="p-8 bg-white border border-slate-200 rounded-xl text-center text-slate-500">
+            No active questions currently assigned.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {questions.map((q, idx) => (
+              <div
+                key={q.id}
+                className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:border-indigo-200 transition space-y-3"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="px-2 py-0.5 bg-slate-100 text-slate-700 font-mono text-xs font-bold rounded">
+                    Question {idx + 1} • {q.code}
+                  </span>
+                  <span className="text-[11px] text-indigo-600 font-semibold bg-indigo-50 px-2 py-0.5 rounded">
+                    Required
+                  </span>
+                </div>
+
+                <h3 className="font-bold text-slate-900 text-sm">{q.title}</h3>
+
+                <p className="text-xs text-slate-600 line-clamp-3 leading-relaxed font-serif italic">
+                  "{q.scenario}"
+                </p>
+
+                <div className="pt-2 border-t border-slate-100 flex justify-between items-center text-xs text-slate-500">
+                  <span>Criminal Law I</span>
+                  <button
+                    onClick={() => navigate('/student/assessment')}
+                    className="text-indigo-600 hover:text-indigo-800 font-semibold flex items-center space-x-1"
+                  >
+                    <span>{isSubmitted ? 'View Feedback' : 'Answer in Wizard'}</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

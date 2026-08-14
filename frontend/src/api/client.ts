@@ -1,140 +1,269 @@
+import {
+  User,
+  Question,
+  Rubric,
+  AgentVersion,
+  AuditLog,
+  AssessmentSession,
+  SessionReviewChecklist,
+  StudentEvaluationFeedback,
+  AdminEvaluation,
+} from '../types';
+
 const API_BASE = '/api';
 
-export class ApiError extends Error {
-  status: number;
-  data: any;
-  constructor(message: string, status: number, data?: any) {
-    super(message);
-    this.status = status;
-    this.data = data;
-    this.name = 'ApiError';
-  }
-}
-
-async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const token = localStorage.getItem('yawa_token');
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...(options.headers as Record<string, string>),
-  };
-
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
+class ApiClient {
+  private getToken(): string | null {
+    return localStorage.getItem('yawa_token');
   }
 
-  const response = await fetch(`${API_BASE}${endpoint}`, {
-    ...options,
-    headers,
-  });
+  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+    const token = this.getToken();
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...(options.headers as Record<string, string>),
+    };
 
-  const data = await response.json().catch(() => ({}));
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
 
-  if (!response.ok) {
-    throw new ApiError(data.error || 'Network request failed', response.status, data);
+    const response = await fetch(`${API_BASE}${endpoint}`, {
+      ...options,
+      headers,
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || `HTTP error ${response.status}`);
+    }
+
+    return data;
   }
 
-  return data;
-}
-
-export const api = {
-  // Auth
-  auth: {
-    login: (credentials: { email: string; password?: string }) =>
-      request<{ success: boolean; token: string; user: any }>('/auth/login', {
+  // --- Auth APIs ---
+  auth = {
+    login: async (credentials: { email: string; password?: string }) => {
+      const res = await this.request<{ success: boolean; data: { token: string; user: User } }>('/auth/login', {
         method: 'POST',
-        body: JSON.stringify(credentials),
-      }),
-    quickLogin: (role: 'STUDENT' | 'EXPERT' | 'ADMIN') =>
-      request<{ success: boolean; token: string; user: any }>('/auth/quick-login', {
+        body: JSON.stringify({ email: credentials.email, passwordHash: credentials.password || 'password123' }),
+      });
+      return res.data;
+    },
+
+    quickLogin: async (role: string) => {
+      const res = await this.request<{ success: boolean; data: { token: string; user: User } }>('/auth/quick-login', {
         method: 'POST',
         body: JSON.stringify({ role }),
-      }),
-    me: () => request<{ success: boolean; user: any }>('/auth/me'),
-    acceptDisclaimer: () =>
-      request<{ success: boolean; disclaimerAcceptedAt: string }>('/auth/accept-disclaimer', {
-        method: 'POST',
-      }),
-  },
+      });
+      return res.data;
+    },
 
-  // Questions
-  questions: {
-    list: (includeInactive = false) =>
-      request<{ success: boolean; data: any[] }>(`/questions${includeInactive ? '?includeInactive=true' : ''}`),
-    getById: (id: string) => request<{ success: boolean; data: any }>(`/questions/${id}`),
-    create: (data: any) =>
-      request<{ success: boolean; data: any }>('/questions', {
+    me: async () => {
+      const res = await this.request<{ success: boolean; data: User }>('/auth/me');
+      return { user: res.data };
+    },
+
+    acceptDisclaimer: async () => {
+      const res = await this.request<{ success: boolean; data: { disclaimerAcceptedAt: string } }>(
+        '/auth/accept-disclaimer',
+        { method: 'POST' }
+      );
+      return res.data;
+    },
+  };
+
+  // --- Questions APIs ---
+  questions = {
+    list: async (activeOnly?: boolean) => {
+      const endpoint = activeOnly ? '/questions?active=true' : '/questions';
+      return this.request<{ success: boolean; data: Question[] }>(endpoint);
+    },
+
+    getAll: async () => {
+      return this.request<{ success: boolean; data: Question[] }>('/questions');
+    },
+
+    getById: async (id: string) => {
+      return this.request<{ success: boolean; data: Question }>(`/questions/${id}`);
+    },
+
+    create: async (data: Partial<Question>) => {
+      return this.request<{ success: boolean; data: Question }>('/questions', {
         method: 'POST',
         body: JSON.stringify(data),
-      }),
-    update: (id: string, data: any) =>
-      request<{ success: boolean; data: any }>(`/questions/${id}`, {
+      });
+    },
+
+    update: async (id: string, data: Partial<Question>) => {
+      return this.request<{ success: boolean; data: Question }>(`/questions/${id}`, {
         method: 'PUT',
         body: JSON.stringify(data),
-      }),
-    delete: (id: string) =>
-      request<{ success: boolean; message: string }>(`/questions/${id}`, {
+      });
+    },
+
+    delete: async (id: string) => {
+      return this.request<{ success: boolean; message: string }>(`/questions/${id}`, {
         method: 'DELETE',
-      }),
-  },
+      });
+    },
+  };
 
-  // Rubrics
-  rubrics: {
-    list: () => request<{ success: boolean; data: any[] }>('/rubrics'),
-    getDefault: () => request<{ success: boolean; data: any }>('/rubrics/default'),
-    getById: (id: string) => request<{ success: boolean; data: any }>(`/rubrics/${id}`),
-    create: (data: any) =>
-      request<{ success: boolean; data: any }>('/rubrics', {
+  // --- Rubrics APIs ---
+  rubrics = {
+    list: async () => {
+      return this.request<{ success: boolean; data: Rubric[] }>('/rubrics');
+    },
+
+    getAll: async () => {
+      return this.request<{ success: boolean; data: Rubric[] }>('/rubrics');
+    },
+
+    getDefault: async () => {
+      return this.request<{ success: boolean; data: Rubric }>('/rubrics/default');
+    },
+
+    save: async (data: { name: string; description: string; criteria: any[] }) => {
+      return this.request<{ success: boolean; data: Rubric }>('/rubrics', {
         method: 'POST',
         body: JSON.stringify(data),
-      }),
-    update: (id: string, data: any) =>
-      request<{ success: boolean; data: any }>(`/rubrics/${id}`, {
+      });
+    },
+
+    create: async (data: { name: string; description: string; criteria: any[] }) => {
+      return this.request<{ success: boolean; data: Rubric }>('/rubrics', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    },
+
+    update: async (id: string, data: { name: string; description: string; criteria: any[] }) => {
+      return this.request<{ success: boolean; data: Rubric }>(`/rubrics/${id}`, {
         method: 'PUT',
         body: JSON.stringify(data),
-      }),
-    delete: (id: string) =>
-      request<{ success: boolean; message: string }>(`/rubrics/${id}`, {
-        method: 'DELETE',
-      }),
-  },
+      });
+    },
+  };
 
-  // Agent Versions
-  agentVersions: {
-    list: () => request<{ success: boolean; data: any[] }>('/agent-versions'),
-    getActive: () => request<{ success: boolean; data: any }>('/agent-versions/active'),
-    getById: (id: string) => request<{ success: boolean; data: any }>(`/agent-versions/${id}`),
-    createDraft: (data: any) =>
-      request<{ success: boolean; data: any }>('/agent-versions', {
+  // --- Agent Version APIs ---
+  agentVersions = {
+    list: async () => {
+      return this.request<{ success: boolean; data: AgentVersion[] }>('/agent-versions');
+    },
+
+    getAll: async () => {
+      return this.request<{ success: boolean; data: AgentVersion[] }>('/agent-versions');
+    },
+
+    getActive: async () => {
+      return this.request<{ success: boolean; data: AgentVersion }>('/agent-versions/active');
+    },
+
+    create: async (data: Partial<AgentVersion>) => {
+      return this.request<{ success: boolean; data: AgentVersion }>('/agent-versions', {
         method: 'POST',
         body: JSON.stringify(data),
-      }),
-    updateDraft: (id: string, data: any) =>
-      request<{ success: boolean; data: any }>(`/agent-versions/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(data),
-      }),
-    lock: (id: string) =>
-      request<{ success: boolean; message: string; data: any }>(`/agent-versions/${id}/lock`, {
-        method: 'POST',
-      }),
-    activate: (id: string) =>
-      request<{ success: boolean; message: string; data: any }>(`/agent-versions/${id}/activate`, {
-        method: 'POST',
-      }),
-    compare: (vA: string, vB: string) =>
-      request<{ success: boolean; data: any }>(`/agent-versions/compare?vA=${vA}&vB=${vB}`),
-  },
+      });
+    },
 
-  // Audit Logs
-  audit: {
-    list: (params: { entityType?: string; limit?: number; offset?: number } = {}) => {
+    lock: async (id: string) => {
+      return this.request<{ success: boolean; data: AgentVersion; message?: string }>(
+        `/agent-versions/${id}/lock`,
+        { method: 'POST' }
+      );
+    },
+
+    activate: async (id: string) => {
+      return this.request<{ success: boolean; data: AgentVersion; message?: string }>(
+        `/agent-versions/${id}/activate`,
+        { method: 'POST' }
+      );
+    },
+
+    compare: async (v1: string, v2: string) => {
+      return this.request<{ success: boolean; data: any }>(`/agent-versions/compare?v1=${v1}&v2=${v2}`);
+    },
+  };
+
+  // --- Audit Logs APIs ---
+  audit = {
+    list: async (filter?: { limit?: number; offset?: number; isDemo?: boolean; entityType?: string }) => {
       const query = new URLSearchParams();
-      if (params.entityType) query.set('entityType', params.entityType);
-      if (params.limit) query.set('limit', String(params.limit));
-      if (params.offset) query.set('offset', String(params.offset));
-      return request<{ success: boolean; data: { total: number; logs: any[] } }>(
+      if (filter?.limit) query.append('limit', String(filter.limit));
+      if (filter?.offset) query.append('offset', String(filter.offset));
+      if (filter?.isDemo !== undefined) query.append('isDemo', String(filter.isDemo));
+      if (filter?.entityType) query.append('entityType', filter.entityType);
+      return this.request<{ success: boolean; data: { total: number; logs: AuditLog[] } }>(
         `/audit-logs?${query.toString()}`
       );
     },
-  },
-};
+  };
+
+  auditLogs = {
+    getAll: async (filter?: { limit?: number; offset?: number; isDemo?: boolean; entityType?: string }) => {
+      return this.audit.list(filter);
+    },
+  };
+
+  // --- Phase 2: Assessment Session APIs ---
+  sessions = {
+    getActive: async () => {
+      return this.request<{ success: boolean; data: AssessmentSession }>('/sessions/active');
+    },
+
+    saveDraft: async (sessionId: string, questionId: string, answerText: string) => {
+      return this.request<{ success: boolean; data: { questionId: string; answerText: string } }>(
+        '/sessions/draft',
+        {
+          method: 'POST',
+          body: JSON.stringify({ sessionId, questionId, answerText }),
+        }
+      );
+    },
+
+    getReview: async (sessionId: string) => {
+      return this.request<{ success: boolean; data: SessionReviewChecklist }>(
+        `/sessions/${sessionId}/review`
+      );
+    },
+
+    submit: async (sessionId: string) => {
+      return this.request<{ success: boolean; message: string; sessionId: string; submittedAt: string }>(
+        `/sessions/${sessionId}/submit`,
+        {
+          method: 'POST',
+        }
+      );
+    },
+  };
+
+  // --- Phase 2: Evaluation APIs ---
+  evaluations = {
+    getSessionFeedback: async (sessionId: string) => {
+      return this.request<{ success: boolean; data: StudentEvaluationFeedback[] }>(
+        `/evaluations/session/${sessionId}`
+      );
+    },
+
+    getAdminList: async (filter?: {
+      agentVersionId?: string;
+      sessionId?: string;
+      questionId?: string;
+      isDemo?: boolean;
+      hasReviewFlags?: boolean;
+    }) => {
+      const query = new URLSearchParams();
+      if (filter?.agentVersionId) query.append('agentVersionId', filter.agentVersionId);
+      if (filter?.sessionId) query.append('sessionId', filter.sessionId);
+      if (filter?.questionId) query.append('questionId', filter.questionId);
+      if (filter?.isDemo !== undefined) query.append('isDemo', String(filter.isDemo));
+      if (filter?.hasReviewFlags) query.append('hasReviewFlags', 'true');
+      return this.request<{ success: boolean; data: { total: number; evaluations: AdminEvaluation[] } }>(
+        `/evaluations?${query.toString()}`
+      );
+    },
+  };
+}
+
+export const api = new ApiClient();

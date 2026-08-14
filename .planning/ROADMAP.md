@@ -44,8 +44,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 02-01: AI evaluation service (semantic evaluation prompt pipeline, Zod schema validation, criterion breakdown, confidence scoring, version tagging)
-- [ ] 02-02: Student assessment portal (exam session UI, essay submission handler, feedback and score viewer)
+- [x] 02-01: AI evaluation service (semantic evaluation prompt pipeline, Zod schema validation, criterion breakdown, snapshot grounding, version tagging)
+- [x] 02-02: Student assessment portal (exam session wizard, mandatory review screen, diagnostic feedback viewer, admin evaluation explorer)
 
 ### Phase 3: Double-Blind Expert Evaluation, Comparison Matrix & Iterative Refinement Workflow
 **Goal**: Deliver the double-blind expert grading workflow (no AI score visibility), side-by-side AI vs Expert comparison matrix, conflict/gap documentation, and the structured refinement process transitioning V1 → V2 → V3.
