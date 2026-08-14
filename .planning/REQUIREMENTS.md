@@ -16,7 +16,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Question, Reference Materials & Rubric Management (QUES / RUBR / VERS)
 
-- [ ] **QUES-01**: Admin/Researcher can manage predetermined Criminal Law I questions, model reference answers, statutory legal elements, and reference materials (no dynamically AI-generated questions).
+- [ ] **QUES-01**: Admin/Researcher can manage predetermined Criminal Law I questions, model reference answers, statutory legal elements, and reference materials (no dynamically AI-generated questions; question count is configurable).
 - [ ] **RUBR-01**: Admin/Researcher can configure scoring rubrics with customizable criteria (e.g., Legal Accuracy, Legal Elements, Reasoning, Application, Terminology), weightings, and maximum scores.
 - [ ] **VERS-01**: Admin/Researcher can manage Agent components (AI skills, AI instructions, scoring rubrics, evaluation patterns, reference materials/configs) and create immutable version snapshots (V1, V2, V3).
 - [ ] **VERS-02**: System ensures Version 1 is not overwritten when Version 2 is created, Version 2 is not overwritten when Version 3 is created, and every AI evaluation explicitly records the Agent Version that produced it.
@@ -33,20 +33,20 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **EXPT-01**: Expert Evaluator views assigned student answers, question, and reference materials without seeing AI-generated scores or reasoning during iterations 1–3.
 - [ ] **EXPT-02**: Expert Evaluator independently evaluates student answers, providing numerical score, scoring basis/reason, criterion-level scores, and qualitative comments.
 
-### AI vs Expert Comparison & 6-Question Refinement (COMP / ITER)
+### AI vs Expert Comparison & Structured Refinement (COMP / ITER)
 
 - [ ] **COMP-01**: Researcher can view side-by-side comparison of AI score vs Expert score AND AI scoring basis vs Expert scoring basis, highlighting score deltas, reasoning differences, missing elements, interpretation gaps, weighting issues, alternative expressions, and partial-credit issues.
 - [ ] **COMP-02**: System preserves both AI and Expert evaluations as valid data points (recognizing a score difference does not automatically mean the AI is wrong).
-- [ ] **ITER-01**: Researcher can document gap analysis using the structured 6-question framework: (1) What was wrong/inconsistent? (2) Why did conflict occur? (3) What did expert say? (4) What should be changed? (5) Which Agent component should be changed? (6) Why should it be changed?
+- [ ] **ITER-01**: Researcher can document gap analysis using a structured refinement framework (identifying conflicts, expert rationale, proposed modifications, targeted agent components, and justification).
 - [ ] **ITER-02**: Researcher can incorporate approved refinements into the next Agent Version (V1 → V2 → V3) while locking past iteration records.
 
-### Post-V3 Final Evaluation & Usability Assessment (FEVL / USAB)
+### Post-V3 Final Evaluation & Usability Assessment (FEVL / USAB / STAT / REPO)
 
 - [ ] **FEVL-01**: Post-V3 Final Evaluation module allows Expert to review Question, Student Answer, AI Score, AI Scoring Basis, and AI Criterion Scores to indicate agreement/disagreement, reasoning correctness, errors, improvement suggestions, and recommended scores (separate from independent scoring).
 - [ ] **USAB-01**: Configurable Student Usability/User Acceptance questionnaire collects post-V3 student feedback.
 - [ ] **USAB-02**: Configurable Expert Assessment Capability questionnaire collects post-V3 expert evaluation of the AI Agent.
-- [ ] **STAT-01**: System calculates descriptive statistics (score differences, agreement rates, weighted mean, standard deviation) across iterations.
-- [ ] **REPO-01**: Researcher can export complete research datasets (questions, answers, version snapshots, evaluations, comparisons, gap analyses, refinement decisions, survey responses, statistics) to CSV, JSON, and PDF reports.
+- [ ] **STAT-01**: System supports descriptive statistics (score differences, agreement measures, weighted means, standard deviations) while keeping statistical methodology flexible and unhardcoded.
+- [ ] **REPO-01**: Researcher can export complete research datasets (questions, answers, version snapshots, evaluations, comparisons, gap analyses, refinement decisions, survey responses, raw data and summary statistics) to CSV, JSON, and PDF reports.
 
 ## v2 Requirements
 
@@ -67,6 +67,7 @@ Explicitly excluded. Documented to prevent scope creep.
 | Automated Answer Rewriting / Ghostwriting | Violates academic integrity; YAWA evaluates and diagnoses rather than rewrites |
 | Autonomous Prompt Self-Tuning | Destroys experimental control; agent versions must be explicitly managed snapshots |
 | Free-Form Legal Chatbot / Dynamic Question Generation | Distracts from rubric-grounded Criminal Law I evaluation |
+| Hardcoded Statistical Analysis Pipeline | Statistical methodology remains subject to adviser/instructor approval; raw data export is prioritized |
 | Multi-tenant Cloud SaaS | Out of scope for localized researcher deployment |
 
 ## Traceability
@@ -106,4 +107,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-08-15*
-*Last updated: 2026-08-15 after research requirements alignment*
+*Last updated: 2026-08-15 after research requirements refinement*

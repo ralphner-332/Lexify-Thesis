@@ -3,7 +3,7 @@
 
 ### YAWA — Yet Another Written-Answer AI Agent
 
-A locally-deployed academic research prototype supporting an empirical study on developing and iteratively refining an AI Agent that evaluates written essay answers from FSUU College of Law students in Criminal Law I. The system compares structured AI evaluations against independent double-blind expert legal assessments across three iterative agent versions (V1 → V2 → V3), conducting gap analysis using a 6-question refinement framework, followed by post-V3 final expert evaluation, student usability testing, and comprehensive research data export.
+A locally-deployed academic research prototype supporting an empirical study on developing and iteratively refining an AI Agent that evaluates written essay answers from FSUU College of Law students in Criminal Law I. The system compares structured AI evaluations against independent double-blind expert legal assessments across three iterative agent versions (V1 → V2 → V3), conducting gap analysis using a structured refinement framework, followed by post-V3 final expert evaluation, student usability testing, and comprehensive research data export.
 
 *Disclaimer: This is strictly an academic research prototype — not a replacement for a law professor, lawyer, formal examination, official institutional grading system, or legal advice.*
 
@@ -33,7 +33,7 @@ A locally-deployed academic research prototype supporting an empirical study on 
 ## Architecture
 
 - **Frontend:** React (Vite SPA) hosting Student Assessment Portal, Double-Blind Expert Portal, and Researcher Admin Dashboard.
-- **Backend:** Node.js/Express REST API orchestrating auth, assessment submissions, AI evaluation calls, comparison metrics, 6-question refinement logs, and research exports.
+- **Backend:** Node.js/Express REST API orchestrating auth, assessment submissions, AI evaluation calls, comparison metrics, structured refinement logs, and research exports.
 - **Database:** SQLite managed via Prisma ORM for zero-config local research persistence with immutable audit trails.
 <!-- GSD:architecture-end -->
 

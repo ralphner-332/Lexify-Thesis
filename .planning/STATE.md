@@ -12,7 +12,7 @@ See: .planning/PROJECT.md (updated 2026-08-15)
 Phase: 1 of 4 (Foundation, RBAC, Question/Rubric Management & Agent Component Snapshots)
 Plan: 0 of 2 in current phase
 Status: Ready to plan Phase 1
-Last activity: 2026-08-15 — Updated planning artifacts to align with official research requirements source of truth
+Last activity: 2026-08-15 — Updated planning artifacts to ensure question counts and statistical methodology are configurable/unhardcoded
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -29,7 +29,7 @@ Progress: [░░░░░░░░░░] 0%
 |-------|-------|-------|----------|
 | Phase 1: Foundation, RBAC, Question/Rubric Management & Agent Component Snapshots | 0/2 | - | - |
 | Phase 2: Semantic AI Evaluation Engine & Student Assessment Portal | 0/2 | - | - |
-| Phase 3: Double-Blind Expert Evaluation, Comparison Matrix & 6-Question Refinement Workflow | 0/2 | - | - |
+| Phase 3: Double-Blind Expert Evaluation, Comparison Matrix & Iterative Refinement Workflow | 0/2 | - | - |
 | Phase 4: Post-V3 Final Evaluation, Configurable Usability Surveys & Research Data Export | 0/2 | - | - |
 
 **Recent Trend:**
@@ -45,8 +45,9 @@ Progress: [░░░░░░░░░░] 0%
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
-- [Init]: Decoupled research requirements from unresolved parameters (participant counts, exact rubrics, questionnaires, AI models are configurable placeholders).
-- [Init]: Established 6-question structured gap analysis framework for iterative refinement (V1 → V2 → V3).
+- [Init]: Predetermined Criminal Law I question items are configurable (no hardcoded question counts).
+- [Init]: Statistical methodology is not treated as finalized; system provides descriptive metrics and raw data export without hardcoding statistical tests.
+- [Init]: Established structured gap analysis & refinement framework for iterative versioning (V1 → V2 → V3).
 - [Init]: Enforced append-only immutability for all Agent component versions, evaluations, and refinement decisions.
 - [Init]: Strictly separated demo data (`isDemo: true`) from research metrics and exports.
 - [Init]: Maintained double-blind expert evaluation during iterations 1–3 and separated post-V3 final evaluation & usability surveys.
@@ -69,6 +70,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-08-15 02:31
-Stopped at: Research requirements aligned with source of truth. Ready for review before Phase 1 planning.
+Last session: 2026-08-15 02:38
+Stopped at: Research requirements aligned with configurable question items and statistical methods. Ready for review.
 Resume file: None
