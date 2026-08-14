@@ -5,6 +5,8 @@ import questionRoutes from './routes/question.routes';
 import rubricRoutes from './routes/rubric.routes';
 import agentVersionRoutes from './routes/agent-version.routes';
 import auditRoutes from './routes/audit.routes';
+import assessmentSessionRoutes from './routes/assessment-session.routes';
+import evaluationRoutes from './routes/evaluation.routes';
 
 export const app = express();
 
@@ -27,6 +29,8 @@ app.use('/api/questions', questionRoutes);
 app.use('/api/rubrics', rubricRoutes);
 app.use('/api/agent-versions', agentVersionRoutes);
 app.use('/api/audit-logs', auditRoutes);
+app.use('/api/sessions', assessmentSessionRoutes);
+app.use('/api/evaluations', evaluationRoutes);
 
 // 404 Handler
 app.use((req: Request, res: Response) => {

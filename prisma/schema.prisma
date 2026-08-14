@@ -8,15 +8,17 @@ generator client {
 }
 
 model User {
-  id                   String    @id @default(uuid())
-  email                String    @unique
+  id                   String              @id @default(uuid())
+  email                String              @unique
   passwordHash         String
   name                 String
-  role                 String    @default("STUDENT") // STUDENT, EXPERT, ADMIN
-  isDemo               Boolean   @default(true)
+  role                 String              @default("STUDENT") // STUDENT, EXPERT, ADMIN
+  isDemo               Boolean             @default(true)
   disclaimerAcceptedAt DateTime?
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+  sessions             AssessmentSession[]
+  evaluations          Evaluation[]
 
   @@map("users")
 }
@@ -67,21 +69,80 @@ model RubricCriterion {
 }
 
 model AgentVersion {
-  id                 String    @id @default(uuid())
-  versionTag         String    @unique // "V1", "V2", "V3"
+  id                 String       @id @default(uuid())
+  versionTag         String       @unique // "V1", "V2", "V3"
   label              String
   description        String
   systemInstructions String
-  skillsDefinition   String    @default("{}") // JSON string
-  rubricSnapshot     String    @default("{}") // JSON snapshot of active rubric
-  evaluationPatterns String    @default("{}") // JSON guidelines for IRAC & scoring
-  modelConfig        String    @default("{}") // JSON string: { provider, modelId, temperature, topP, maxTokens }
-  isLocked           Boolean   @default(false)
-  isActive           Boolean   @default(false)
-  createdAt          DateTime  @default(now())
+  skillsDefinition   String       @default("{}") // JSON string
+  rubricSnapshot     String       @default("{}") // JSON snapshot of active rubric
+  evaluationPatterns String       @default("{}") // JSON guidelines for IRAC & scoring
+  modelConfig        String       @default("{}") // JSON string: { provider, modelId, temperature, topP, maxTokens }
+  isLocked           Boolean      @default(false)
+  isActive           Boolean      @default(false)
+  createdAt          DateTime     @default(now())
   lockedAt           DateTime?
+  evaluations        Evaluation[]
 
   @@map("agent_versions")
+}
+
+model AssessmentSession {
+  id                String               @id @default(uuid())
+  studentId         String
+  student           User                 @relation(fields: [studentId], references: [id])
+  status            String               @default("IN_PROGRESS") // "IN_PROGRESS" | "SUBMITTED"
+  questionsSnapshot String               @default("[]") // Authoritative JSON snapshot of full question objects (scenario, modelAnswer, elements, provisions, variations, orderIndex)
+  startedAt         DateTime             @default(now())
+  submittedAt       DateTime?
+  isDemo            Boolean              @default(true)
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  drafts            StudentAnswerDraft[]
+  evaluations       Evaluation[]
+
+  @@map("assessment_sessions")
+}
+
+model StudentAnswerDraft {
+  id          String            @id @default(uuid())
+  sessionId   String
+  session     AssessmentSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  questionId  String
+  answerText  String            @default("")
+  updatedAt   DateTime          @updatedAt
+
+  @@unique([sessionId, questionId])
+  @@map("student_answer_drafts")
+}
+
+model Evaluation {
+  id                  String            @id @default(uuid())
+  sessionId           String
+  session             AssessmentSession @relation(fields: [sessionId], references: [id])
+  studentId           String
+  student             User              @relation(fields: [studentId], references: [id])
+  questionId          String
+  agentVersionId      String
+  agentVersion        AgentVersion      @relation(fields: [agentVersionId], references: [id])
+  questionSnapshot    String            // Immutable JSON snapshot copied directly from AssessmentSession.questionsSnapshot
+  modelConfigSnapshot String            // Immutable JSON snapshot of LLM settings at evaluation time
+  rubricSnapshot      String            // Immutable JSON snapshot of rubric criteria and weights at evaluation time
+  studentAnswer       String
+  numericalScore      Float
+  maxScore            Float             // Dynamically derived from rubric criteria maxPoints sum
+  scoringBasis        String
+  criterionScores     String            // JSON array: [{ criterionName, score, maxPoints, reasoning }]
+  strengths           String            // JSON array of strings
+  missingElements     String            // JSON array of strings
+  areasForImprovement String            // JSON array of strings
+  confidenceScore     Float             @default(1.0)
+  reviewFlags         String            @default("[]") // JSON array of review flags
+  isDemo              Boolean           @default(true)
+  createdAt           DateTime          @default(now())
+  // Strictly NO updatedAt — append-only immutable evidence!
+
+  @@map("evaluations")
 }
 
 model AuditLog {
