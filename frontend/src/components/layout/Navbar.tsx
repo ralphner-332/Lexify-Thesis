@@ -128,7 +128,37 @@ export const Navbar: React.FC = () => {
                         : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                     }`}
                   >
-                    Evaluations
+                    AI Evals
+                  </Link>
+                  <Link
+                    to="/admin/comparisons"
+                    className={`px-3 py-2 rounded-lg transition ${
+                      isActive('/admin/comparisons')
+                        ? 'bg-indigo-50 text-indigo-700 font-bold'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                    }`}
+                  >
+                    Comparisons
+                  </Link>
+                  <Link
+                    to="/admin/refinements"
+                    className={`px-3 py-2 rounded-lg transition ${
+                      isActive('/admin/refinements')
+                        ? 'bg-indigo-50 text-indigo-700 font-bold'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                    }`}
+                  >
+                    Refinements
+                  </Link>
+                  <Link
+                    to="/admin/version-lineage"
+                    className={`px-3 py-2 rounded-lg transition ${
+                      isActive('/admin/version-lineage')
+                        ? 'bg-indigo-50 text-indigo-700 font-bold'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                    }`}
+                  >
+                    Lineage
                   </Link>
                   <Link
                     to="/admin/audit-logs"
@@ -138,7 +168,7 @@ export const Navbar: React.FC = () => {
                         : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                     }`}
                   >
-                    Audit Trail
+                    Audit
                   </Link>
                 </>
               )}

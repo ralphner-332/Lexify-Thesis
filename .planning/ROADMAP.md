@@ -61,8 +61,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 03-01: Double-blind expert evaluation portal (evaluation queue, reference view, criterion scoring, independent legal reasoning input)
-- [ ] 03-02: AI vs Expert comparison dashboard & refinement manager (side-by-side diffs, delta metrics, gap categorization, version iteration transition)
+- [x] 03-01: Double-blind expert evaluation portal (evaluation queue, reference view, criterion scoring, independent legal reasoning input)
+- [x] 03-02: AI vs Expert comparison dashboard & refinement manager (side-by-side diffs, delta metrics, gap categorization, version iteration transition)
 
 ### Phase 4: Post-V3 Final Evaluation, Configurable Usability Surveys & Research Data Export
 **Goal**: Deliver the post-V3 final expert agreement review module, separate configurable questionnaires for student usability and expert capability, descriptive statistical metrics, and research dataset export.

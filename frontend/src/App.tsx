@@ -14,6 +14,7 @@ import { FeedbackViewer } from './pages/student/FeedbackViewer';
 
 // Expert Pages
 import { ExpertDashboard } from './pages/expert/ExpertDashboard';
+import { ExpertGradingWorkspace } from './pages/expert/ExpertGradingWorkspace';
 
 // Admin Pages
 import { AdminDashboard } from './pages/admin/AdminDashboard';
@@ -22,6 +23,9 @@ import { RubricBuilder } from './pages/admin/RubricBuilder';
 import { AgentVersionConsole } from './pages/admin/AgentVersionConsole';
 import { AuditLogViewer } from './pages/admin/AuditLogViewer';
 import { AdminEvaluationExplorer } from './pages/admin/AdminEvaluationExplorer';
+import { ComparisonMatrixDashboard } from './pages/admin/ComparisonMatrixDashboard';
+import { RefinementManager } from './pages/admin/RefinementManager';
+import { VersionLineageConsole } from './pages/admin/VersionLineageConsole';
 
 // Root Route Decider
 const RootRedirect: React.FC = () => {
@@ -70,9 +74,10 @@ export const App: React.FC = () => {
                 <Route path="/student/assessment/feedback" element={<FeedbackViewer />} />
               </Route>
 
-              {/* Expert Double-Blind Evaluator Portal (Role: EXPERT) */}
-              <Route element={<ProtectedLayout allowedRoles={['EXPERT']} />}>
+              {/* Expert Double-Blind Evaluator Portal (Role: EXPERT, ADMIN) */}
+              <Route element={<ProtectedLayout allowedRoles={['EXPERT', 'ADMIN']} />}>
                 <Route path="/expert" element={<ExpertDashboard />} />
+                <Route path="/expert/evaluate/:sessionId/:questionId" element={<ExpertGradingWorkspace />} />
               </Route>
 
               {/* Researcher Admin Consoles (Role: ADMIN) */}
@@ -82,6 +87,9 @@ export const App: React.FC = () => {
                 <Route path="/admin/rubrics" element={<RubricBuilder />} />
                 <Route path="/admin/agent-versions" element={<AgentVersionConsole />} />
                 <Route path="/admin/evaluations" element={<AdminEvaluationExplorer />} />
+                <Route path="/admin/comparisons" element={<ComparisonMatrixDashboard />} />
+                <Route path="/admin/refinements" element={<RefinementManager />} />
+                <Route path="/admin/version-lineage" element={<VersionLineageConsole />} />
                 <Route path="/admin/audit-logs" element={<AuditLogViewer />} />
               </Route>
 

@@ -8,6 +8,11 @@ import {
   SessionReviewChecklist,
   StudentEvaluationFeedback,
   AdminEvaluation,
+  ExpertQueueItem,
+  ExpertSubmissionDetail,
+  ComparisonItem,
+  ComparisonSummary,
+  RefinementLog,
 } from '../types';
 
 const API_BASE = '/api';
@@ -167,6 +172,32 @@ class ApiClient {
       });
     },
 
+    branch: async (data: {
+      parentVersionTag: string;
+      newVersionTag: string;
+      label: string;
+      description: string;
+      systemInstructions?: string;
+      skillsDefinition?: Record<string, any>;
+      rubricSnapshot?: Record<string, any>;
+      evaluationPatterns?: Record<string, any>;
+      modelConfig?: any;
+      changelogEntry: {
+        component: string;
+        changeSummary: string;
+        rationale: string;
+        linkedRefinementIds: string[];
+      };
+    }) => {
+      return this.request<{ success: boolean; message: string; data: AgentVersion }>(
+        '/agent-versions/branch',
+        {
+          method: 'POST',
+          body: JSON.stringify(data),
+        }
+      );
+    },
+
     lock: async (id: string) => {
       return this.request<{ success: boolean; data: AgentVersion; message?: string }>(
         `/agent-versions/${id}/lock`,
@@ -262,6 +293,122 @@ class ApiClient {
       return this.request<{ success: boolean; data: { total: number; evaluations: AdminEvaluation[] } }>(
         `/evaluations?${query.toString()}`
       );
+    },
+  };
+
+  // --- Phase 3: Double-Blind Expert APIs ---
+  expert = {
+    getQueue: async (isDemo?: boolean) => {
+      const query = new URLSearchParams();
+      if (isDemo !== undefined) query.append('isDemo', String(isDemo));
+      return this.request<{ success: boolean; data: ExpertQueueItem[] }>(
+        `/expert/queue?${query.toString()}`
+      );
+    },
+
+    getSubmission: async (sessionId: string, questionId: string) => {
+      return this.request<{ success: boolean; data: ExpertSubmissionDetail }>(
+        `/expert/submission/${sessionId}/${questionId}`
+      );
+    },
+
+    saveDraft: async (
+      sessionId: string,
+      questionId: string,
+      draftData: {
+        numericalScore?: number;
+        scoringBasis?: string;
+        criterionScores?: any[];
+        qualitativeComments?: string;
+      }
+    ) => {
+      return this.request<{ success: boolean; message: string; draft: any }>('/expert/draft', {
+        method: 'POST',
+        body: JSON.stringify({ sessionId, questionId, ...draftData }),
+      });
+    },
+
+    submitEvaluation: async (
+      sessionId: string,
+      questionId: string,
+      evalData: {
+        numericalScore: number;
+        scoringBasis: string;
+        criterionScores: Array<{
+          criterionName: string;
+          score: number;
+          maxPoints: number;
+          reasoning?: string;
+        }>;
+        qualitativeComments?: string;
+      }
+    ) => {
+      return this.request<{ success: boolean; message: string; evaluation: any }>('/expert/submit', {
+        method: 'POST',
+        body: JSON.stringify({ sessionId, questionId, ...evalData }),
+      });
+    },
+  };
+
+  // --- Phase 3: AI vs Expert Comparison APIs ---
+  comparisons = {
+    getList: async (filter?: {
+      agentVersionId?: string;
+      sessionId?: string;
+      questionId?: string;
+      isDemo?: boolean;
+      thresholdPercent?: number;
+      hasConflictOnly?: boolean;
+    }) => {
+      const query = new URLSearchParams();
+      if (filter?.agentVersionId) query.append('agentVersionId', filter.agentVersionId);
+      if (filter?.sessionId) query.append('sessionId', filter.sessionId);
+      if (filter?.questionId) query.append('questionId', filter.questionId);
+      if (filter?.isDemo !== undefined) query.append('isDemo', String(filter.isDemo));
+      if (filter?.thresholdPercent !== undefined)
+        query.append('thresholdPercent', String(filter.thresholdPercent));
+      if (filter?.hasConflictOnly) query.append('hasConflictOnly', 'true');
+
+      return this.request<{
+        success: boolean;
+        data: { summary: ComparisonSummary; comparisons: ComparisonItem[] };
+      }>(`/comparisons?${query.toString()}`);
+    },
+  };
+
+  // --- Phase 3: Structured Refinement Log APIs ---
+  refinements = {
+    getList: async (filter?: {
+      agentVersionId?: string;
+      targetComponent?: string;
+      gapCategory?: string;
+      status?: string;
+      isDemo?: boolean;
+    }) => {
+      const query = new URLSearchParams();
+      if (filter?.agentVersionId) query.append('agentVersionId', filter.agentVersionId);
+      if (filter?.targetComponent) query.append('targetComponent', filter.targetComponent);
+      if (filter?.gapCategory) query.append('gapCategory', filter.gapCategory);
+      if (filter?.status) query.append('status', filter.status);
+      if (filter?.isDemo !== undefined) query.append('isDemo', String(filter.isDemo));
+
+      return this.request<{ success: boolean; data: RefinementLog[] }>(
+        `/refinements?${query.toString()}`
+      );
+    },
+
+    create: async (data: Partial<RefinementLog>) => {
+      return this.request<{ success: boolean; data: RefinementLog }>('/refinements', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    },
+
+    update: async (id: string, data: Partial<RefinementLog>) => {
+      return this.request<{ success: boolean; data: RefinementLog }>(`/refinements/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      });
     },
   };
 }
