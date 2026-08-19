@@ -106,4 +106,41 @@ export class AgentVersionController {
       return res.status(400).json({ success: false, error: error.message || 'Failed to compare versions' });
     }
   }
+
+  static async branchVersion(req: Request, res: Response) {
+    try {
+      const { parentVersionTag, newVersionTag, label, description, systemInstructions, skillsDefinition, rubricSnapshot, evaluationPatterns, modelConfig, changelogEntry } = req.body;
+
+      if (!parentVersionTag || !newVersionTag || !label || !description || !changelogEntry) {
+        return res.status(400).json({
+          success: false,
+          error: 'parentVersionTag, newVersionTag, label, description, and changelogEntry are required',
+        });
+      }
+
+      const branched = await AgentVersionService.branchNextVersion(
+        {
+          parentVersionTag,
+          newVersionTag,
+          label,
+          description,
+          systemInstructions,
+          skillsDefinition,
+          rubricSnapshot,
+          evaluationPatterns,
+          modelConfig,
+          changelogEntry,
+        },
+        req.user
+      );
+
+      return res.status(201).json({
+        success: true,
+        message: `Version ${branched.versionTag} branched successfully from ${parentVersionTag}.`,
+        data: branched,
+      });
+    } catch (error: any) {
+      return res.status(400).json({ success: false, error: error.message || 'Failed to branch agent version' });
+    }
+  }
 }

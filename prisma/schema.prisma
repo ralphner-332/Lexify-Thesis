@@ -19,6 +19,8 @@ model User {
   updatedAt            DateTime            @updatedAt
   sessions             AssessmentSession[]
   evaluations          Evaluation[]
+  expertEvaluations    ExpertEvaluation[]
+  expertDrafts         ExpertDraft[]
 
   @@map("users")
 }
@@ -78,6 +80,8 @@ model AgentVersion {
   rubricSnapshot     String       @default("{}") // JSON snapshot of active rubric
   evaluationPatterns String       @default("{}") // JSON guidelines for IRAC & scoring
   modelConfig        String       @default("{}") // JSON string: { provider, modelId, temperature, topP, maxTokens }
+  parentVersionId    String?      // Parent version reference for V1 -> V2 -> V3 lineage
+  changelog          String       @default("[]") // JSON array of change records: [{ component, changeSummary, rationale, linkedRefinementIds, approver, timestamp }]
   isLocked           Boolean      @default(false)
   isActive           Boolean      @default(false)
   createdAt          DateTime     @default(now())
@@ -92,7 +96,7 @@ model AssessmentSession {
   studentId         String
   student           User                 @relation(fields: [studentId], references: [id])
   status            String               @default("IN_PROGRESS") // "IN_PROGRESS" | "SUBMITTED"
-  questionsSnapshot String               @default("[]") // Authoritative JSON snapshot of full question objects (scenario, modelAnswer, elements, provisions, variations, orderIndex)
+  questionsSnapshot String               @default("[]") // Authoritative JSON snapshot of full question objects
   startedAt         DateTime             @default(now())
   submittedAt       DateTime?
   isDemo            Boolean              @default(true)
@@ -100,6 +104,8 @@ model AssessmentSession {
   updatedAt         DateTime             @updatedAt
   drafts            StudentAnswerDraft[]
   evaluations       Evaluation[]
+  expertEvaluations ExpertEvaluation[]
+  expertDrafts      ExpertDraft[]
 
   @@map("assessment_sessions")
 }
@@ -143,6 +149,73 @@ model Evaluation {
   // Strictly NO updatedAt — append-only immutable evidence!
 
   @@map("evaluations")
+}
+
+model ExpertEvaluation {
+  id                  String            @id @default(uuid())
+  expertId            String
+  expert              User              @relation(fields: [expertId], references: [id])
+  sessionId           String
+  session             AssessmentSession @relation(fields: [sessionId], references: [id])
+  questionId          String
+  studentAnswer       String
+  numericalScore      Float
+  maxScore            Float
+  scoringBasis        String            // Expert comprehensive legal rationale
+  criterionScores     String            // JSON array: [{ criterionName, score, maxPoints, reasoning }]
+  qualitativeComments String            @default("")
+  questionSnapshot    String            // Immutable JSON snapshot from session
+  rubricSnapshot      String            // Immutable JSON snapshot of rubric criteria used
+  isDemo              Boolean           @default(true)
+  createdAt           DateTime          @default(now())
+  // Strictly NO updatedAt — append-only immutable evidence!
+
+  @@unique([expertId, sessionId, questionId])
+  @@map("expert_evaluations")
+}
+
+model ExpertDraft {
+  id                  String            @id @default(uuid())
+  expertId            String
+  expert              User              @relation(fields: [expertId], references: [id])
+  sessionId           String
+  session             AssessmentSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  questionId          String
+  numericalScore      Float             @default(0)
+  scoringBasis        String            @default("")
+  criterionScores     String            @default("[]")
+  qualitativeComments String            @default("")
+  updatedAt           DateTime          @updatedAt
+
+  @@unique([expertId, sessionId, questionId])
+  @@map("expert_drafts")
+}
+
+model RefinementLog {
+  id                     String   @id @default(uuid())
+  gapId                  String   @unique // e.g. "GAP-001"
+  questionId             String?
+  sessionId              String?
+  aiEvaluationId         String?
+  expertEvaluationId     String?
+  agentVersionId         String   // e.g. "V1"
+  targetComponent        String   // "SYSTEM_INSTRUCTIONS" | "EVALUATION_PATTERNS" | "RUBRIC_SNAPSHOT" | "CONCEPT_VARIATIONS" | "SKILLS_DEFINITION" | "OTHER"
+  gapCategory            String   // "LEGAL_CONCEPT_MISUNDERSTANDING" | "STATUTORY_ELEMENT_OMISSION" | "REASONING_IRAC_ISSUE" | "ACCEPTABLE_VARIATION_HANDLING" | "SCORING_RUBRIC_INTERPRETATION" | "HALLUCINATION_UNSUPPORTED_CLAIM" | "REFERENCE_MATERIAL_GROUNDING" | "OTHER"
+  discrepancyDescription String
+  aiPosition             String   @default("")
+  expertPosition         String   @default("")
+  expertRationale        String   @default("")
+  rootCauseAnalysis      String   @default("")
+  proposedRefinement     String
+  status                 String   @default("DRAFT") // "DRAFT" | "APPROVED" | "APPLIED" | "REJECTED"
+  approvedDecision       String   @default("")
+  resultingAgentVersionId String? // e.g. "V2" when applied
+  researcherNotes        String   @default("")
+  isDemo                 Boolean  @default(true)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  @@map("refinement_logs")
 }
 
 model AuditLog {

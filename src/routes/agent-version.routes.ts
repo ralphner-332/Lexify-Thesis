@@ -12,6 +12,7 @@ router.get('/compare', authenticateToken, requireRole('ADMIN'), AgentVersionCont
 router.get('/:id', authenticateToken, AgentVersionController.getById);
 
 // Admin-only snapshot management
+router.post('/branch', authenticateToken, requireRole('ADMIN'), AgentVersionController.branchVersion);
 router.post('/', authenticateToken, requireRole('ADMIN'), AgentVersionController.createDraft);
 router.put('/:id', authenticateToken, requireRole('ADMIN'), AgentVersionController.updateDraft);
 router.post('/:id/lock', authenticateToken, requireRole('ADMIN'), AgentVersionController.lockVersion);

@@ -19,6 +19,26 @@ export interface CreateAgentVersionInput {
   rubricSnapshot?: Record<string, any>;
   evaluationPatterns?: Record<string, any>;
   modelConfig?: ModelConfigInput;
+  parentVersionId?: string;
+  changelog?: any[];
+}
+
+export interface BranchVersionInput {
+  parentVersionTag: string; // e.g. "V1"
+  newVersionTag: string;    // e.g. "V2"
+  label: string;
+  description: string;
+  systemInstructions?: string;
+  skillsDefinition?: Record<string, any>;
+  rubricSnapshot?: Record<string, any>;
+  evaluationPatterns?: Record<string, any>;
+  modelConfig?: ModelConfigInput;
+  changelogEntry: {
+    component: string;
+    changeSummary: string;
+    rationale: string;
+    linkedRefinementIds: string[];
+  };
 }
 
 export class AgentVersionService {
@@ -84,6 +104,8 @@ export class AgentVersionService {
             topP: 0.95,
           }
         ),
+        parentVersionId: input.parentVersionId || null,
+        changelog: JSON.stringify(input.changelog || []),
         isLocked: false,
         isActive: false,
       },
@@ -96,6 +118,85 @@ export class AgentVersionService {
       entityType: 'AGENT_VERSION',
       entityId: created.id,
       details: { versionTag: created.versionTag, label: created.label },
+      isDemo: true,
+    });
+
+    return this.deserializeVersion(created);
+  }
+
+  /**
+   * Branches a new version (e.g. V1 -> V2, V2 -> V3) from an existing parent version,
+   * preserving parent reference and appending structured changelog entries.
+   */
+  static async branchNextVersion(input: BranchVersionInput, user?: { id: string; email: string }) {
+    const parentVersion = await prisma.agentVersion.findUnique({
+      where: { versionTag: input.parentVersionTag.toUpperCase() },
+    });
+
+    if (!parentVersion) {
+      throw new Error(`Parent version ${input.parentVersionTag} not found.`);
+    }
+
+    const existingTarget = await prisma.agentVersion.findUnique({
+      where: { versionTag: input.newVersionTag.toUpperCase() },
+    });
+
+    if (existingTarget) {
+      throw new Error(`Target version tag ${input.newVersionTag} already exists.`);
+    }
+
+    // Clone parent components with overrides
+    const systemInstructions = input.systemInstructions ?? parentVersion.systemInstructions;
+    const skillsDefinition = input.skillsDefinition
+      ? JSON.stringify(input.skillsDefinition)
+      : parentVersion.skillsDefinition;
+    const rubricSnapshot = input.rubricSnapshot
+      ? JSON.stringify(input.rubricSnapshot)
+      : parentVersion.rubricSnapshot;
+    const evaluationPatterns = input.evaluationPatterns
+      ? JSON.stringify(input.evaluationPatterns)
+      : parentVersion.evaluationPatterns;
+    const modelConfig = input.modelConfig
+      ? JSON.stringify(input.modelConfig)
+      : parentVersion.modelConfig;
+
+    const parentChangelog = safeParseJson(parentVersion.changelog, []);
+    const newChangelogEntry = {
+      ...input.changelogEntry,
+      approverId: user?.id || 'admin',
+      approverEmail: user?.email || 'admin@yawa.local',
+      timestamp: new Date().toISOString(),
+    };
+    const combinedChangelog = [...parentChangelog, newChangelogEntry];
+
+    const created = await prisma.agentVersion.create({
+      data: {
+        versionTag: input.newVersionTag.trim().toUpperCase(),
+        label: input.label.trim(),
+        description: input.description.trim(),
+        systemInstructions,
+        skillsDefinition,
+        rubricSnapshot,
+        evaluationPatterns,
+        modelConfig,
+        parentVersionId: parentVersion.id,
+        changelog: JSON.stringify(combinedChangelog),
+        isLocked: false,
+        isActive: false,
+      },
+    });
+
+    await AuditService.logAction({
+      userId: user?.id,
+      userEmail: user?.email,
+      action: 'BRANCH_AGENT_VERSION',
+      entityType: 'AGENT_VERSION',
+      entityId: created.id,
+      details: {
+        parentVersionTag: input.parentVersionTag,
+        newVersionTag: created.versionTag,
+        changelogEntry: newChangelogEntry,
+      },
       isDemo: true,
     });
 
@@ -232,18 +333,21 @@ export class AgentVersionService {
   private static deserializeVersion(v: any) {
     return {
       ...v,
-      skillsDefinition: safeParseJson(v.skillsDefinition),
-      rubricSnapshot: safeParseJson(v.rubricSnapshot),
-      evaluationPatterns: safeParseJson(v.evaluationPatterns),
-      modelConfig: safeParseJson(v.modelConfig),
+      skillsDefinition: safeParseJson(v.skillsDefinition, {}),
+      rubricSnapshot: safeParseJson(v.rubricSnapshot, {}),
+      evaluationPatterns: safeParseJson(v.evaluationPatterns, {}),
+      modelConfig: safeParseJson(v.modelConfig, {}),
+      changelog: safeParseJson(v.changelog, []),
     };
   }
 }
 
-function safeParseJson(str: string): any {
+function safeParseJson(str: any, fallback: any = {}): any {
+  if (!str) return fallback;
+  if (typeof str === 'object') return str;
   try {
     return JSON.parse(str);
   } catch {
-    return {};
+    return fallback;
   }
 }
