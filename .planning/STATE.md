@@ -9,10 +9,10 @@ See: .planning/PROJECT.md (updated 2026-08-15)
 
 ## Current Position
 
-Phase: 3 of 4 (Double-Blind Expert Evaluation, Comparison Matrix & Iterative Refinement Workflow) — COMPLETED ✓
-Plan: 2 of 2 in current phase (100% Phase 3 complete)
-Status: Ready for Phase 4
-Last activity: 2026-08-19 — Completed Phase 3 Plans 03-01 and 03-02 with 100% test pass
+Phase: 4 of 4 (Post-V3 Final Evaluation, Configurable Usability Surveys & Research Data Export)
+Plan: 0 of 2 in current phase (2 plans ready)
+Status: Planned — ready to execute Phase 4
+Last activity: 2026-08-21 — Generated Phase 4 execution plans (04-01 Backend Engine & Exports, 04-02 Frontend Evaluation, Analytics & Thesis Report Generator)
 
 Progress: [███████████████░░░░░] 75%
 
@@ -45,13 +45,13 @@ Progress: [███████████████░░░░░] 75%
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
-- [Phase 3]: Student anonymity strictly enforced for expert evaluators (anonymized codes `Student-01`, `Student-02`, etc.); student names/emails are strictly hidden.
-- [Phase 3]: Double-blind evaluation protocol: Experts evaluate student essays with strictly zero visibility of AI scores, AI reasoning, or comparison metrics prior to submitting their independent evaluation.
-- [Phase 3]: Expert evaluations are grounded in the session's questionSnapshot, reference answer, statutory elements, provisions, and active rubric criteria.
-- [Phase 3]: AI vs Expert Comparison Matrix calculates transparent deltas (`Expert Score - AI Score` and absolute difference) and criterion-level deltas, unlocked only after expert submission.
-- [Phase 3]: Conflict thresholds and detection signals are configurable by researchers (not hardcoded conclusions).
-- [Phase 3]: Structured Refinement Framework (`RefinementLog`) enables researchers to log gaps/conflicts linked directly to comparison evidence, with human-in-the-loop approval.
-- [Phase 3]: Iterative Version Transition Engine branches V1 → V2 and V2 → V3, preserving parent references, recording structured changelogs, and locking immutable snapshot evidence.
+- [Phase 4]: Post-V3 review is an unblinded review of V3 AI evaluation output by legal experts, capturing Likert ratings (1-5), error category tags, recommended score, and final verdict.
+- [Phase 4]: Post-V3 reviews are append-only and strictly immutable; no automatic modifications are applied to V3 upon review.
+- [Phase 4]: Separate configurable questionnaire tracks for Student Usability (`USAB-01`) and Expert AI Capability (`USAB-02`).
+- [Phase 4]: Questionnaires support versioned snapshots; responses are immutable research records.
+- [Phase 4]: Descriptive Statistics service calculates Mean Absolute Delta ($\text{Mean}(|\text{AI} - \text{Expert}|)$) progression across V1 → V2 → V3, criterion deltas, and score distributions without imposing dogmatic claims of statistical significance.
+- [Phase 4]: Research exports provide 10 separated CSV datasets and a unified research JSON bundle, strictly excluding demo data (`isDemo: true`) by default.
+- [Phase 4]: Academic thesis report generator compiles formatted research findings with study overview, methodology notes, progression tables, and prototype disclaimer.
 
 ### Pending Todos
 
@@ -71,6 +71,6 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-08-19 22:30
-Stopped at: Phase 3 complete (both 03-01 and 03-02 verified). Next is Phase 4.
-Resume file: .planning/phases/04-post-v3-final-evaluation-surveys-data-export/
+Last session: 2026-08-21 02:30
+Stopped at: Phase 4 plans generated (04-01 and 04-02). Ready for execution via `/gsd-execute-phase 4`.
+Resume file: .planning/phases/04-post-v3-final-evaluation-configurable-usability-surveys-research-data-export/04-01-PLAN.md
