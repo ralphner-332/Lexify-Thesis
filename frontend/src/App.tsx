@@ -11,10 +11,14 @@ import { StudentDashboard } from './pages/student/StudentDashboard';
 import { AssessmentWizard } from './pages/student/AssessmentWizard';
 import { ReviewAnswersPage } from './pages/student/ReviewAnswersPage';
 import { FeedbackViewer } from './pages/student/FeedbackViewer';
+import { StudentUsabilitySurvey } from './pages/student/StudentUsabilitySurvey';
 
 // Expert Pages
 import { ExpertDashboard } from './pages/expert/ExpertDashboard';
 import { ExpertGradingWorkspace } from './pages/expert/ExpertGradingWorkspace';
+import { PostV3FinalReviewPortal } from './pages/expert/PostV3FinalReviewPortal';
+import { PostV3ReviewWorkspace } from './pages/expert/PostV3ReviewWorkspace';
+import { ExpertCapabilitySurvey } from './pages/expert/ExpertCapabilitySurvey';
 
 // Admin Pages
 import { AdminDashboard } from './pages/admin/AdminDashboard';
@@ -26,6 +30,9 @@ import { AdminEvaluationExplorer } from './pages/admin/AdminEvaluationExplorer';
 import { ComparisonMatrixDashboard } from './pages/admin/ComparisonMatrixDashboard';
 import { RefinementManager } from './pages/admin/RefinementManager';
 import { VersionLineageConsole } from './pages/admin/VersionLineageConsole';
+import { ResearchAnalyticsDashboard } from './pages/admin/ResearchAnalyticsDashboard';
+import { SurveyManager } from './pages/admin/SurveyManager';
+import { ResearchExportReportPortal } from './pages/admin/ResearchExportReportPortal';
 
 // Root Route Decider
 const RootRedirect: React.FC = () => {
@@ -72,12 +79,16 @@ export const App: React.FC = () => {
                 <Route path="/student/assessment" element={<AssessmentWizard />} />
                 <Route path="/student/assessment/review" element={<ReviewAnswersPage />} />
                 <Route path="/student/assessment/feedback" element={<FeedbackViewer />} />
+                <Route path="/student/survey" element={<StudentUsabilitySurvey />} />
               </Route>
 
-              {/* Expert Double-Blind Evaluator Portal (Role: EXPERT, ADMIN) */}
+              {/* Expert Double-Blind Evaluator & Post-V3 Portal (Role: EXPERT, ADMIN) */}
               <Route element={<ProtectedLayout allowedRoles={['EXPERT', 'ADMIN']} />}>
                 <Route path="/expert" element={<ExpertDashboard />} />
                 <Route path="/expert/evaluate/:sessionId/:questionId" element={<ExpertGradingWorkspace />} />
+                <Route path="/expert/post-v3-reviews" element={<PostV3FinalReviewPortal />} />
+                <Route path="/expert/post-v3-reviews/:evaluationId" element={<PostV3ReviewWorkspace />} />
+                <Route path="/expert/survey" element={<ExpertCapabilitySurvey />} />
               </Route>
 
               {/* Researcher Admin Consoles (Role: ADMIN) */}
@@ -90,6 +101,9 @@ export const App: React.FC = () => {
                 <Route path="/admin/comparisons" element={<ComparisonMatrixDashboard />} />
                 <Route path="/admin/refinements" element={<RefinementManager />} />
                 <Route path="/admin/version-lineage" element={<VersionLineageConsole />} />
+                <Route path="/admin/analytics" element={<ResearchAnalyticsDashboard />} />
+                <Route path="/admin/surveys" element={<SurveyManager />} />
+                <Route path="/admin/exports" element={<ResearchExportReportPortal />} />
                 <Route path="/admin/audit-logs" element={<AuditLogViewer />} />
               </Route>
 

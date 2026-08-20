@@ -17,6 +17,9 @@ async function verifyPhase2Behavior() {
   const studentId = studentAuth.user.id;
 
   // Clean any previous test sessions for this student
+  await prisma.finalEvaluationReview.deleteMany({});
+  await prisma.expertEvaluation.deleteMany({});
+  await prisma.expertDraft.deleteMany({});
   await prisma.evaluation.deleteMany({ where: { studentId } });
   await prisma.studentAnswerDraft.deleteMany({ where: { session: { studentId } } });
   await prisma.assessmentSession.deleteMany({ where: { studentId } });

@@ -173,7 +173,7 @@ export interface AdminEvaluation {
 export interface ExpertQueueItem {
   sessionId: string;
   questionId: string;
-  studentAnonymizedCode: string; // e.g. "Student-01"
+  studentAnonymizedCode: string;
   questionCode: string;
   questionTitle: string;
   status: 'NOT_STARTED' | 'DRAFT' | 'SUBMITTED';
@@ -265,7 +265,7 @@ export interface ComparisonSummary {
 
 export interface RefinementLog {
   id: string;
-  gapId: string; // e.g. "GAP-001"
+  gapId: string;
   questionId?: string | null;
   sessionId?: string | null;
   aiEvaluationId?: string | null;
@@ -286,4 +286,222 @@ export interface RefinementLog {
   isDemo: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+// --- Phase 4 Post-V3 Review, Survey, Statistics & Export Types ---
+
+export interface V3ReviewQueueItem {
+  evaluationId: string;
+  sessionId: string;
+  questionId: string;
+  studentAnonymizedCode: string;
+  questionCode: string;
+  questionTitle: string;
+  v3AiScore: number;
+  maxScore: number;
+  reviewStatus: 'PENDING' | 'COMPLETED';
+  reviewId?: string;
+  finalVerdict?: string;
+  createdAt: string;
+}
+
+export interface V3EvaluationReviewDetail {
+  evaluationId: string;
+  sessionId: string;
+  questionId: string;
+  studentAnonymizedCode: string;
+  question: {
+    code: string;
+    title: string;
+    scenario: string;
+    modelAnswer: string;
+    statutoryElements: string[];
+    relevantProvisions: string[];
+  };
+  studentAnswer: string;
+  v3AiScore: number;
+  v3MaxScore: number;
+  v3ScoringBasis: string;
+  v3CriterionScores: Array<{
+    criterionName: string;
+    score: number;
+    maxPoints: number;
+    reasoning: string;
+  }>;
+  v3Strengths: string[];
+  v3MissingElements: string[];
+  existingReview?: {
+    id: string;
+    agreementRating: number;
+    reasoningCorrectnessRating: number;
+    statutoryGroundingRating: number;
+    recommendedScore: number;
+    scoreDelta: number;
+    errorTags: string[];
+    qualitativeComments: string;
+    improvementSuggestions: string;
+    finalVerdict: string;
+    createdAt: string;
+  } | null;
+}
+
+export interface FinalEvaluationRecord {
+  id: string;
+  expertId: string;
+  evaluationId: string;
+  sessionId: string;
+  questionId: string;
+  studentAnonymizedCode: string;
+  agreementRating: number;
+  reasoningCorrectnessRating: number;
+  statutoryGroundingRating: number;
+  recommendedScore: number;
+  aiScore: number;
+  scoreDelta: number;
+  errorTags: string[];
+  qualitativeComments: string;
+  improvementSuggestions: string;
+  finalVerdict: string;
+  createdAt: string;
+}
+
+export interface SurveyQuestion {
+  id: string;
+  code: string;
+  prompt: string;
+  questionType: 'LIKERT_5' | 'OPEN_TEXT' | 'MULTIPLE_CHOICE' | string;
+  options: string[];
+  orderIndex: number;
+  isRequired: boolean;
+}
+
+export interface SurveyQuestionnaire {
+  id: string;
+  title: string;
+  description: string;
+  targetRole: 'STUDENT' | 'EXPERT';
+  version: string;
+  isActive: boolean;
+  isDemo: boolean;
+  questions: SurveyQuestion[];
+  createdAt: string;
+}
+
+export interface SurveyResponse {
+  id: string;
+  questionnaireId: string;
+  respondentId: string;
+  respondentRole: string;
+  answers: Record<string, any>;
+  qualitativeNotes: string;
+  isDemo: boolean;
+  createdAt: string;
+}
+
+export interface SurveySummaryMetrics {
+  questionnaireId: string;
+  title: string;
+  targetRole: string;
+  version: string;
+  totalResponses: number;
+  questionAverages: Array<{
+    questionCode: string;
+    prompt: string;
+    questionType: string;
+    meanScore?: number;
+    responseCounts: Record<string, number>;
+  }>;
+  openFeedbackNotes: string[];
+}
+
+export interface IterationMetricSummary {
+  versionTag: string;
+  versionLabel: string;
+  sampleSize: number;
+  meanAbsoluteDelta: number;
+  meanSignedDelta: number;
+  aiMeanScore: number;
+  aiScoreStdDev: number;
+  expertMeanScore: number;
+  expertScoreStdDev: number;
+  minAbsoluteDelta: number;
+  maxAbsoluteDelta: number;
+  agreementRate: number;
+  conflictCount: number;
+}
+
+export interface CriterionDeltaSummary {
+  criterionName: string;
+  maxPoints: number;
+  v1MeanAbsoluteDelta?: number;
+  v2MeanAbsoluteDelta?: number;
+  v3MeanAbsoluteDelta?: number;
+}
+
+export interface PostV3Summary {
+  totalReviews: number;
+  meanAgreementRating: number;
+  meanReasoningCorrectness: number;
+  meanStatutoryGrounding: number;
+  meanRecommendedScore: number;
+  meanScoreDelta: number;
+  verdictCounts: {
+    ACCEPTABLE: number;
+    ACCEPTABLE_WITH_MINOR_ISSUES: number;
+    REQUIRES_IMPROVEMENT: number;
+    [key: string]: number;
+  };
+  errorTagCounts: Record<string, number>;
+}
+
+export interface ProgressionAnalytics {
+  isDemo: boolean;
+  generatedAt: string;
+  iterations: IterationMetricSummary[];
+  criterionProgression: CriterionDeltaSummary[];
+  postV3Summary: PostV3Summary;
+  methodologyNotes: string[];
+}
+
+export interface AcademicReportData {
+  title: string;
+  subtitle: string;
+  institution: string;
+  courseSubject: string;
+  generatedAt: string;
+  isDemo: boolean;
+  disclaimer: string;
+  executiveSummary: string;
+  datasetSummary: {
+    totalStudents: number;
+    totalSubmissions: number;
+    totalAiEvaluations: number;
+    totalExpertEvaluations: number;
+    totalPairedComparisons: number;
+    totalRefinementLogs: number;
+    totalPostV3Reviews: number;
+    totalStudentSurveys: number;
+    totalExpertSurveys: number;
+  };
+  questionScenarios: Array<{
+    code: string;
+    title: string;
+    scenario: string;
+    modelAnswer: string;
+    statutoryElements: string[];
+    relevantProvisions: string[];
+  }>;
+  iterationProgression: {
+    iterations: IterationMetricSummary[];
+    criterionProgression: CriterionDeltaSummary[];
+    progressionNarrative: string;
+  };
+  postV3AgreementFindings: PostV3Summary;
+  refinementAuditTrail: any[];
+  surveyFindings: {
+    studentUsability: any[];
+    expertCapability: any[];
+  };
+  methodologyAndLimitations: string[];
+  dataDictionary: Array<{ field: string; type: string; description: string }>;
 }

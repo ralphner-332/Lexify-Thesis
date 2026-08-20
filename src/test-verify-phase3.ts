@@ -20,6 +20,7 @@ async function verifyPhase3Behavior() {
   const adminId = adminAuth.user.id;
 
   // Clean existing test data for clean slate
+  await prisma.finalEvaluationReview.deleteMany({});
   await prisma.refinementLog.deleteMany({ where: { isDemo: true } });
   await prisma.expertDraft.deleteMany({ where: { expertId } });
   await prisma.expertEvaluation.deleteMany({ where: { expertId } });

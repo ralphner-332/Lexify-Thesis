@@ -78,8 +78,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 04-01: Post-V3 final evaluation module & configurable survey engine (agreement scoring, survey builder, response collector, descriptive metrics)
-- [ ] 04-02: Researcher analytics dashboard & multi-format export pipeline (CSV, JSON, PDF exports, demo data filtering)
+- [x] 04-01: Post-V3 final evaluation module & configurable survey engine (agreement scoring, survey builder, response collector, descriptive metrics)
+- [x] 04-02: Researcher analytics dashboard & multi-format export pipeline (CSV, JSON, printable PDF reports, demo data filtering)
 
 ## Progress
 
@@ -91,4 +91,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 1. Foundation, RBAC, Question/Rubric Management & Agent Component Snapshots | 2/2 | Completed | 2026-08-19 |
 | 2. Semantic AI Evaluation Engine & Student Assessment Portal | 2/2 | Completed | 2026-08-19 |
 | 3. Double-Blind Expert Evaluation, Comparison Matrix & Iterative Refinement Workflow | 2/2 | Completed | 2026-08-19 |
-| 4. Post-V3 Final Evaluation, Configurable Usability Surveys & Research Data Export | 0/2 | Ready to execute | - |
+| 4. Post-V3 Final Evaluation, Configurable Usability Surveys & Research Data Export | 2/2 | Completed | 2026-08-21 |

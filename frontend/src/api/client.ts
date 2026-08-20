@@ -13,6 +13,14 @@ import {
   ComparisonItem,
   ComparisonSummary,
   RefinementLog,
+  V3ReviewQueueItem,
+  V3EvaluationReviewDetail,
+  FinalEvaluationRecord,
+  SurveyQuestionnaire,
+  SurveyResponse,
+  SurveySummaryMetrics,
+  ProgressionAnalytics,
+  AcademicReportData,
 } from '../types';
 
 const API_BASE = '/api';
@@ -409,6 +417,149 @@ class ApiClient {
         method: 'PUT',
         body: JSON.stringify(data),
       });
+    },
+  };
+
+  // --- Phase 4: Post-V3 Final Expert Review APIs ---
+  finalReviews = {
+    getQueue: async (isDemo?: boolean) => {
+      const query = new URLSearchParams();
+      if (isDemo !== undefined) query.append('isDemo', String(isDemo));
+      return this.request<{ success: boolean; data: V3ReviewQueueItem[] }>(
+        `/final-reviews/queue?${query.toString()}`
+      );
+    },
+
+    getEvaluation: async (evaluationId: string) => {
+      return this.request<{ success: boolean; data: V3EvaluationReviewDetail }>(
+        `/final-reviews/evaluation/${evaluationId}`
+      );
+    },
+
+    submitReview: async (
+      evaluationId: string,
+      reviewData: {
+        agreementRating: number;
+        reasoningCorrectnessRating?: number;
+        statutoryGroundingRating?: number;
+        recommendedScore: number;
+        errorTags: string[];
+        qualitativeComments?: string;
+        improvementSuggestions?: string;
+        finalVerdict: string;
+      }
+    ) => {
+      return this.request<{ success: boolean; message: string; review: any }>(
+        `/final-reviews/evaluation/${evaluationId}`,
+        {
+          method: 'POST',
+          body: JSON.stringify(reviewData),
+        }
+      );
+    },
+
+    getList: async (filter?: { isDemo?: boolean; finalVerdict?: string; agentVersionId?: string }) => {
+      const query = new URLSearchParams();
+      if (filter?.isDemo !== undefined) query.append('isDemo', String(filter.isDemo));
+      if (filter?.finalVerdict) query.append('finalVerdict', filter.finalVerdict);
+      if (filter?.agentVersionId) query.append('agentVersionId', filter.agentVersionId);
+
+      return this.request<{ success: boolean; data: FinalEvaluationRecord[] }>(
+        `/final-reviews/reviews?${query.toString()}`
+      );
+    },
+  };
+
+  // --- Phase 4: Configurable Survey APIs ---
+  surveys = {
+    getActive: async (role?: 'STUDENT' | 'EXPERT', isDemo?: boolean) => {
+      const query = new URLSearchParams();
+      if (role) query.append('role', role);
+      if (isDemo !== undefined) query.append('isDemo', String(isDemo));
+      return this.request<{ success: boolean; data: SurveyQuestionnaire }>(
+        `/surveys/active?${query.toString()}`
+      );
+    },
+
+    submitResponse: async (data: {
+      questionnaireId: string;
+      answers: Record<string, any>;
+      qualitativeNotes?: string;
+      isDemo?: boolean;
+    }) => {
+      return this.request<{ success: boolean; message: string; response: SurveyResponse }>(
+        '/surveys/response',
+        {
+          method: 'POST',
+          body: JSON.stringify(data),
+        }
+      );
+    },
+
+    getResponses: async (filter?: { questionnaireId?: string; respondentRole?: string; isDemo?: boolean }) => {
+      const query = new URLSearchParams();
+      if (filter?.questionnaireId) query.append('questionnaireId', filter.questionnaireId);
+      if (filter?.respondentRole) query.append('respondentRole', filter.respondentRole);
+      if (filter?.isDemo !== undefined) query.append('isDemo', String(filter.isDemo));
+
+      return this.request<{ success: boolean; data: SurveyResponse[] }>(
+        `/surveys/responses?${query.toString()}`
+      );
+    },
+
+    getSummary: async (questionnaireId: string, isDemo?: boolean) => {
+      const query = new URLSearchParams();
+      if (isDemo !== undefined) query.append('isDemo', String(isDemo));
+      return this.request<{ success: boolean; data: SurveySummaryMetrics }>(
+        `/surveys/summary/${questionnaireId}?${query.toString()}`
+      );
+    },
+
+    getQuestionnaires: async (isDemo?: boolean) => {
+      const query = new URLSearchParams();
+      if (isDemo !== undefined) query.append('isDemo', String(isDemo));
+      return this.request<{ success: boolean; data: SurveyQuestionnaire[] }>(
+        `/surveys/questionnaires?${query.toString()}`
+      );
+    },
+  };
+
+  // --- Phase 4: Descriptive Statistics APIs ---
+  statistics = {
+    getProgression: async (options?: { isDemo?: boolean; thresholdPercent?: number }) => {
+      const query = new URLSearchParams();
+      if (options?.isDemo !== undefined) query.append('isDemo', String(options.isDemo));
+      if (options?.thresholdPercent !== undefined)
+        query.append('thresholdPercent', String(options.thresholdPercent));
+
+      return this.request<{ success: boolean; data: ProgressionAnalytics }>(
+        `/statistics/progression?${query.toString()}`
+      );
+    },
+  };
+
+  // --- Phase 4: Research Export & Academic Report APIs ---
+  exports = {
+    getBundleJSON: async (options?: { isDemo?: boolean }) => {
+      const query = new URLSearchParams();
+      if (options?.isDemo !== undefined) query.append('isDemo', String(options.isDemo));
+      return this.request<{ success: boolean; data: any }>(`/exports/json?${query.toString()}`);
+    },
+
+    getDatasetsCSV: async (options?: { isDemo?: boolean }) => {
+      const query = new URLSearchParams();
+      if (options?.isDemo !== undefined) query.append('isDemo', String(options.isDemo));
+      return this.request<{ success: boolean; data: Record<string, string> }>(
+        `/exports/csv?${query.toString()}`
+      );
+    },
+
+    getAcademicReport: async (options?: { isDemo?: boolean }) => {
+      const query = new URLSearchParams();
+      if (options?.isDemo !== undefined) query.append('isDemo', String(options.isDemo));
+      return this.request<{ success: boolean; data: AcademicReportData }>(
+        `/exports/academic-report?${query.toString()}`
+      );
     },
   };
 }

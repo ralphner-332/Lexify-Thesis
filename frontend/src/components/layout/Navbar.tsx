@@ -75,6 +75,16 @@ export const Navbar: React.FC = () => {
                   >
                     Diagnostic Feedback
                   </Link>
+                  <Link
+                    to="/student/survey"
+                    className={`px-3 py-2 rounded-lg transition ${
+                      isActive('/student/survey')
+                        ? 'bg-indigo-50 text-indigo-700 font-bold'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                    }`}
+                  >
+                    Usability Survey
+                  </Link>
                 </>
               )}
 
@@ -161,6 +171,36 @@ export const Navbar: React.FC = () => {
                     Lineage
                   </Link>
                   <Link
+                    to="/admin/analytics"
+                    className={`px-3 py-2 rounded-lg transition ${
+                      isActive('/admin/analytics')
+                        ? 'bg-indigo-50 text-indigo-700 font-bold'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                    }`}
+                  >
+                    Analytics
+                  </Link>
+                  <Link
+                    to="/admin/surveys"
+                    className={`px-3 py-2 rounded-lg transition ${
+                      isActive('/admin/surveys')
+                        ? 'bg-indigo-50 text-indigo-700 font-bold'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                    }`}
+                  >
+                    Surveys
+                  </Link>
+                  <Link
+                    to="/admin/exports"
+                    className={`px-3 py-2 rounded-lg transition ${
+                      isActive('/admin/exports')
+                        ? 'bg-indigo-50 text-indigo-700 font-bold'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                    }`}
+                  >
+                    Exports & Report
+                  </Link>
+                  <Link
                     to="/admin/audit-logs"
                     className={`px-3 py-2 rounded-lg transition ${
                       isActive('/admin/audit-logs')
@@ -174,16 +214,38 @@ export const Navbar: React.FC = () => {
               )}
 
               {user.role === 'EXPERT' && (
-                <Link
-                  to="/expert"
-                  className={`px-3 py-2 rounded-lg transition ${
-                    isActive('/expert')
-                      ? 'bg-indigo-50 text-indigo-700 font-bold'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                  }`}
-                >
-                  Expert Portal
-                </Link>
+                <>
+                  <Link
+                    to="/expert"
+                    className={`px-3 py-2 rounded-lg transition ${
+                      isActive('/expert')
+                        ? 'bg-indigo-50 text-indigo-700 font-bold'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                    }`}
+                  >
+                    Double-Blind Queue
+                  </Link>
+                  <Link
+                    to="/expert/post-v3-reviews"
+                    className={`px-3 py-2 rounded-lg transition ${
+                      isActive('/expert/post-v3-reviews')
+                        ? 'bg-indigo-50 text-indigo-700 font-bold'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                    }`}
+                  >
+                    Post-V3 Validation
+                  </Link>
+                  <Link
+                    to="/expert/survey"
+                    className={`px-3 py-2 rounded-lg transition ${
+                      isActive('/expert/survey')
+                        ? 'bg-indigo-50 text-indigo-700 font-bold'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                    }`}
+                  >
+                    Capability Survey
+                  </Link>
+                </>
               )}
             </nav>
           </div>
