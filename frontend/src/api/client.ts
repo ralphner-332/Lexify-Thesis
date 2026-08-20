@@ -58,32 +58,44 @@ class ApiClient {
   // --- Auth APIs ---
   auth = {
     login: async (credentials: { email: string; password?: string }) => {
-      const res = await this.request<{ success: boolean; data: { token: string; user: User } }>('/auth/login', {
+      const res = await this.request<{ success: boolean; token: string; user: User }>('/auth/login', {
         method: 'POST',
-        body: JSON.stringify({ email: credentials.email, passwordHash: credentials.password || 'password123' }),
+        body: JSON.stringify({
+          email: credentials.email,
+          password: credentials.password || 'Password123!',
+        }),
       });
-      return res.data;
+      if (!res || !res.token || !res.user) {
+        throw new Error('Invalid authentication response from server.');
+      }
+      return { token: res.token, user: res.user };
     },
 
     quickLogin: async (role: string) => {
-      const res = await this.request<{ success: boolean; data: { token: string; user: User } }>('/auth/quick-login', {
+      const res = await this.request<{ success: boolean; token: string; user: User }>('/auth/quick-login', {
         method: 'POST',
         body: JSON.stringify({ role }),
       });
-      return res.data;
+      if (!res || !res.token || !res.user) {
+        throw new Error('Invalid quick-login response from server.');
+      }
+      return { token: res.token, user: res.user };
     },
 
     me: async () => {
-      const res = await this.request<{ success: boolean; data: User }>('/auth/me');
-      return { user: res.data };
+      const res = await this.request<{ success: boolean; user: User }>('/auth/me');
+      if (!res || !res.user) {
+        throw new Error('Failed to retrieve user profile.');
+      }
+      return { user: res.user };
     },
 
     acceptDisclaimer: async () => {
-      const res = await this.request<{ success: boolean; data: { disclaimerAcceptedAt: string } }>(
+      const res = await this.request<{ success: boolean; disclaimerAcceptedAt: string; message: string }>(
         '/auth/accept-disclaimer',
         { method: 'POST' }
       );
-      return res.data;
+      return { disclaimerAcceptedAt: res.disclaimerAcceptedAt };
     },
   };
 

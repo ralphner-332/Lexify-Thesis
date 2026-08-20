@@ -46,6 +46,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     try {
       const res = await api.auth.login({ email, password });
+      if (!res || !res.token || !res.user) {
+        throw new Error('Authentication response did not contain a valid session token or user.');
+      }
       localStorage.setItem('yawa_token', res.token);
       setToken(res.token);
       setUser(res.user);
@@ -58,6 +61,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     try {
       const res = await api.auth.quickLogin(targetRole);
+      if (!res || !res.token || !res.user) {
+        throw new Error('Quick login response did not contain a valid session token or user.');
+      }
       localStorage.setItem('yawa_token', res.token);
       setToken(res.token);
       setUser(res.user);

@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { DisclaimerBanner } from '../components/layout/DisclaimerBanner';
 import { Lock, Mail, GraduationCap, Scale, Shield, AlertCircle, Sparkles } from 'lucide-react';
 import { UserRole } from '../types';
 
@@ -52,8 +51,6 @@ export const LoginPage: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-900 text-slate-100">
-      <DisclaimerBanner />
-
       <div className="flex-1 flex flex-col justify-center items-center px-4 sm:px-6 lg:px-8 py-12">
         <div className="max-w-md w-full space-y-8">
           {/* Header & Logo */}
