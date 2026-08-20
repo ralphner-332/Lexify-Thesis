@@ -263,6 +263,16 @@ class ApiClient {
       return this.request<{ success: boolean; data: AssessmentSession }>('/sessions/active');
     },
 
+    create: async () => {
+      return this.request<{ success: boolean; data: AssessmentSession }>('/sessions/new', {
+        method: 'POST',
+      });
+    },
+
+    getHistory: async () => {
+      return this.request<{ success: boolean; data: AssessmentSession[] }>('/sessions/history');
+    },
+
     saveDraft: async (sessionId: string, questionId: string, answerText: string) => {
       return this.request<{ success: boolean; data: { questionId: string; answerText: string } }>(
         '/sessions/draft',

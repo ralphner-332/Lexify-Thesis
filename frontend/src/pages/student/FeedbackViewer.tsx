@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import { api } from '../../api/client';
 import { StudentEvaluationFeedback, AssessmentSession } from '../../types';
 import { CriterionProgressBar } from '../../components/common/CriterionProgressBar';
@@ -16,6 +17,7 @@ import {
 
 export const FeedbackViewer: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const querySessionId = searchParams.get('sessionId');
 
@@ -130,14 +132,33 @@ export const FeedbackViewer: React.FC = () => {
           <div className="flex items-center gap-2">
             <button
               onClick={() => navigate('/student/survey')}
-              className="flex items-center space-x-1.5 px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg text-sm font-semibold transition shadow-sm"
+              className="flex items-center space-x-1.5 px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg text-xs font-semibold transition shadow-sm"
             >
               <MessageSquareHeart className="w-4 h-4 text-indigo-600" />
-              <span>Take Usability Survey</span>
+              <span>Usability Survey</span>
             </button>
+
+            {user?.isDemo && (
+              <button
+                onClick={async () => {
+                  try {
+                    await api.sessions.create();
+                    navigate('/student/assessment');
+                  } catch (err: any) {
+                    alert(err.message);
+                  }
+                }}
+                className="flex items-center space-x-1.5 px-3.5 py-2 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-lg text-xs font-semibold transition shadow-sm"
+                title="Permitted for demo simulation accounts only"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                <span>New Demo Attempt</span>
+              </button>
+            )}
+
             <button
               onClick={() => navigate('/student')}
-              className="flex items-center space-x-2 px-4 py-2 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-lg text-sm font-semibold transition"
+              className="flex items-center space-x-1.5 px-3.5 py-2 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-lg text-xs font-semibold transition"
             >
               <ArrowLeft className="w-4 h-4" />
               <span>Dashboard</span>

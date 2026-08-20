@@ -18,6 +18,35 @@ export class AssessmentSessionController {
     }
   }
 
+  static async createSession(req: Request, res: Response) {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ success: false, error: 'Not authenticated' });
+      }
+
+      const session = await AssessmentSessionService.createAssessmentSession(
+        req.user.id,
+        req.user.isDemo
+      );
+      return res.status(201).json({ success: true, data: session });
+    } catch (error: any) {
+      return res.status(403).json({ success: false, error: error.message || 'Failed to create assessment session' });
+    }
+  }
+
+  static async listStudentSessions(req: Request, res: Response) {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ success: false, error: 'Not authenticated' });
+      }
+
+      const sessions = await AssessmentSessionService.getStudentSessionHistory(req.user.id);
+      return res.status(200).json({ success: true, data: sessions });
+    } catch (error: any) {
+      return res.status(500).json({ success: false, error: error.message || 'Failed to list sessions' });
+    }
+  }
+
   static async getSessionById(req: Request, res: Response) {
     try {
       if (!req.user) {

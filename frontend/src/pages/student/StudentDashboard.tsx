@@ -39,6 +39,18 @@ export const StudentDashboard: React.FC = () => {
     loadDashboardData();
   }, []);
 
+  const handleStartNewDemoSession = async () => {
+    try {
+      setLoading(true);
+      await api.sessions.create();
+      navigate('/student/assessment');
+    } catch (err: any) {
+      setError(err.message || 'Failed to start new demo assessment');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const isSubmitted = activeSession?.status === 'SUBMITTED';
 
   return (
@@ -64,20 +76,33 @@ export const StudentDashboard: React.FC = () => {
           </p>
         </div>
 
-        {/* Primary Action Button */}
-        <div>
+        {/* Primary Action Buttons */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
           {isSubmitted ? (
-            <button
-              onClick={() => navigate('/student/assessment/feedback')}
-              className="flex items-center space-x-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm shadow-md shadow-emerald-200 transition"
-            >
-              <CheckCircle className="w-5 h-5" />
-              <span>View Diagnostic Feedback & Scores</span>
-            </button>
+            <>
+              <button
+                onClick={() => navigate('/student/assessment/feedback')}
+                className="flex items-center justify-center space-x-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm shadow-md shadow-emerald-200 transition"
+              >
+                <CheckCircle className="w-4 h-4" />
+                <span>View Diagnostic Feedback</span>
+              </button>
+
+              {user?.isDemo && (
+                <button
+                  onClick={handleStartNewDemoSession}
+                  className="flex items-center justify-center space-x-2 px-4 py-2.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-xl font-semibold text-xs transition shadow-sm"
+                  title="Permitted for demo simulation accounts only"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                  <span>Start New Demo Attempt</span>
+                </button>
+              )}
+            </>
           ) : (
             <button
               onClick={() => navigate('/student/assessment')}
-              className="flex items-center space-x-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm shadow-md shadow-indigo-200 transition"
+              className="flex items-center justify-center space-x-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm shadow-md shadow-indigo-200 transition"
             >
               <Sparkles className="w-5 h-5" />
               <span>{activeSession ? 'Resume Assessment Session' : 'Start Assessment Session'}</span>
