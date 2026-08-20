@@ -8,19 +8,21 @@ generator client {
 }
 
 model User {
-  id                   String              @id @default(uuid())
-  email                String              @unique
-  passwordHash         String
-  name                 String
-  role                 String              @default("STUDENT") // STUDENT, EXPERT, ADMIN
-  isDemo               Boolean             @default(true)
-  disclaimerAcceptedAt DateTime?
-  createdAt            DateTime            @default(now())
-  updatedAt            DateTime            @updatedAt
-  sessions             AssessmentSession[]
-  evaluations          Evaluation[]
-  expertEvaluations    ExpertEvaluation[]
-  expertDrafts         ExpertDraft[]
+  id                    String                 @id @default(uuid())
+  email                 String                 @unique
+  passwordHash          String
+  name                  String
+  role                  String                 @default("STUDENT") // STUDENT, EXPERT, ADMIN
+  isDemo                Boolean                @default(true)
+  disclaimerAcceptedAt  DateTime?
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  sessions              AssessmentSession[]
+  evaluations           Evaluation[]
+  expertEvaluations     ExpertEvaluation[]
+  expertDrafts          ExpertDraft[]
+  finalReviews          FinalEvaluationReview[]
+  surveyResponses       SurveyResponse[]
 
   @@map("users")
 }
@@ -123,29 +125,30 @@ model StudentAnswerDraft {
 }
 
 model Evaluation {
-  id                  String            @id @default(uuid())
+  id                  String                 @id @default(uuid())
   sessionId           String
-  session             AssessmentSession @relation(fields: [sessionId], references: [id])
+  session             AssessmentSession      @relation(fields: [sessionId], references: [id])
   studentId           String
-  student             User              @relation(fields: [studentId], references: [id])
+  student             User                   @relation(fields: [studentId], references: [id])
   questionId          String
   agentVersionId      String
-  agentVersion        AgentVersion      @relation(fields: [agentVersionId], references: [id])
-  questionSnapshot    String            // Immutable JSON snapshot copied directly from AssessmentSession.questionsSnapshot
-  modelConfigSnapshot String            // Immutable JSON snapshot of LLM settings at evaluation time
-  rubricSnapshot      String            // Immutable JSON snapshot of rubric criteria and weights at evaluation time
+  agentVersion        AgentVersion           @relation(fields: [agentVersionId], references: [id])
+  questionSnapshot    String                 // Immutable JSON snapshot copied directly from AssessmentSession.questionsSnapshot
+  modelConfigSnapshot String                 // Immutable JSON snapshot of LLM settings at evaluation time
+  rubricSnapshot      String                 // Immutable JSON snapshot of rubric criteria and weights at evaluation time
   studentAnswer       String
   numericalScore      Float
-  maxScore            Float             // Dynamically derived from rubric criteria maxPoints sum
+  maxScore            Float                  // Dynamically derived from rubric criteria maxPoints sum
   scoringBasis        String
-  criterionScores     String            // JSON array: [{ criterionName, score, maxPoints, reasoning }]
-  strengths           String            // JSON array of strings
-  missingElements     String            // JSON array of strings
-  areasForImprovement String            // JSON array of strings
-  confidenceScore     Float             @default(1.0)
-  reviewFlags         String            @default("[]") // JSON array of review flags
-  isDemo              Boolean           @default(true)
-  createdAt           DateTime          @default(now())
+  criterionScores     String                 // JSON array: [{ criterionName, score, maxPoints, reasoning }]
+  strengths           String                 // JSON array of strings
+  missingElements     String                 // JSON array of strings
+  areasForImprovement String                 // JSON array of strings
+  confidenceScore     Float                  @default(1.0)
+  reviewFlags         String                 @default("[]") // JSON array of review flags
+  isDemo              Boolean                @default(true)
+  createdAt           DateTime               @default(now())
+  finalReviews        FinalEvaluationReview[]
   // Strictly NO updatedAt — append-only immutable evidence!
 
   @@map("evaluations")
@@ -216,6 +219,83 @@ model RefinementLog {
   updatedAt              DateTime @updatedAt
 
   @@map("refinement_logs")
+}
+
+model FinalEvaluationReview {
+  id                         String     @id @default(uuid())
+  expertId                   String
+  expert                     User       @relation(fields: [expertId], references: [id])
+  evaluationId               String
+  evaluation                 Evaluation @relation(fields: [evaluationId], references: [id])
+  sessionId                  String
+  questionId                 String
+  agentVersionId             String     // e.g. "V3"
+  agreementRating            Int        // 1-5 Likert scale (1: Strongly Disagree, 5: Strongly Agree)
+  reasoningCorrectnessRating Int        // 1-5 Likert scale
+  statutoryGroundingRating   Int        // 1-5 Likert scale
+  recommendedScore           Float
+  aiScore                    Float
+  scoreDelta                 Float      // recommendedScore - aiScore
+  errorTags                  String     @default("[]") // JSON array of error tag strings
+  qualitativeComments        String     @default("")
+  improvementSuggestions     String     @default("")
+  finalVerdict               String     // "ACCEPTABLE" | "ACCEPTABLE_WITH_MINOR_ISSUES" | "REQUIRES_IMPROVEMENT"
+  questionSnapshot           String     // JSON snapshot of question evaluated
+  studentAnswer              String
+  isDemo                     Boolean    @default(true)
+  createdAt                  DateTime   @default(now())
+  // Strictly NO updatedAt — append-only immutable evidence!
+
+  @@unique([expertId, evaluationId])
+  @@map("final_evaluation_reviews")
+}
+
+model SurveyQuestionnaire {
+  id          String           @id @default(uuid())
+  title       String
+  description String
+  targetRole  String           // "STUDENT" | "EXPERT"
+  version     String           @default("1.0")
+  isActive    Boolean          @default(true)
+  isDemo      Boolean          @default(true)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  questions   SurveyQuestion[]
+  responses   SurveyResponse[]
+
+  @@map("survey_questionnaires")
+}
+
+model SurveyQuestion {
+  id              String              @id @default(uuid())
+  questionnaireId String
+  questionnaire   SurveyQuestionnaire @relation(fields: [questionnaireId], references: [id], onDelete: Cascade)
+  code            String              // e.g. "SQ-01", "EQ-01"
+  prompt          String
+  questionType    String              // "LIKERT_5" | "OPEN_TEXT" | "MULTIPLE_CHOICE"
+  options         String              @default("[]") // JSON array of string options
+  orderIndex      Int                 @default(0)
+  isRequired      Boolean             @default(true)
+  createdAt       DateTime            @default(now())
+
+  @@map("survey_questions")
+}
+
+model SurveyResponse {
+  id                    String              @id @default(uuid())
+  questionnaireId       String
+  questionnaire         SurveyQuestionnaire @relation(fields: [questionnaireId], references: [id])
+  respondentId          String
+  respondent            User                @relation(fields: [respondentId], references: [id])
+  respondentRole        String              // "STUDENT" | "EXPERT"
+  questionnaireSnapshot String              // Immutable JSON snapshot of questions at response time
+  answers               String              // JSON object: { [questionId]: value }
+  qualitativeNotes      String              @default("")
+  isDemo                Boolean             @default(true)
+  createdAt             DateTime            @default(now())
+  // Strictly NO updatedAt — append-only immutable evidence!
+
+  @@map("survey_responses")
 }
 
 model AuditLog {

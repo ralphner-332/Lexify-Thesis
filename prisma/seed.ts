@@ -266,7 +266,171 @@ async function main() {
   });
   console.log('✅ Seeded baseline Agent Version (V1 - Locked)');
 
-  // 5. Seed Initial Audit Log
+  // 5. Seed Default Configurable Survey Questionnaires
+  const studentSurvey = await prisma.surveyQuestionnaire.upsert({
+    where: { id: 'default-student-usability-survey' },
+    update: {
+      title: 'Student Assessment & Diagnostic Feedback Usability Questionnaire',
+      description: 'Evaluates student experience regarding diagnostic feedback clarity, educational utility, navigation ease, and interface usability.',
+      targetRole: 'STUDENT',
+      version: '1.0',
+      isActive: true,
+      isDemo: true,
+    },
+    create: {
+      id: 'default-student-usability-survey',
+      title: 'Student Assessment & Diagnostic Feedback Usability Questionnaire',
+      description: 'Evaluates student experience regarding diagnostic feedback clarity, educational utility, navigation ease, and interface usability.',
+      targetRole: 'STUDENT',
+      version: '1.0',
+      isActive: true,
+      isDemo: true,
+      questions: {
+        create: [
+          {
+            code: 'SQ-01',
+            prompt: 'The diagnostic feedback clearly identified the legal strengths and missing statutory elements in my essay answer.',
+            questionType: 'LIKERT_5',
+            options: JSON.stringify(['1 - Strongly Disagree', '2 - Disagree', '3 - Neutral', '4 - Agree', '5 - Strongly Agree']),
+            orderIndex: 1,
+            isRequired: true,
+          },
+          {
+            code: 'SQ-02',
+            prompt: 'The breakdown of scores across individual rubric criteria was understandable and educational.',
+            questionType: 'LIKERT_5',
+            options: JSON.stringify(['1 - Strongly Disagree', '2 - Disagree', '3 - Neutral', '4 - Agree', '5 - Strongly Agree']),
+            orderIndex: 2,
+            isRequired: true,
+          },
+          {
+            code: 'SQ-03',
+            prompt: 'Reviewing the feedback helped me better understand how the IRAC legal reasoning method is evaluated.',
+            questionType: 'LIKERT_5',
+            options: JSON.stringify(['1 - Strongly Disagree', '2 - Disagree', '3 - Neutral', '4 - Agree', '5 - Strongly Agree']),
+            orderIndex: 3,
+            isRequired: true,
+          },
+          {
+            code: 'SQ-04',
+            prompt: 'The multi-step assessment wizard and review checklist were intuitive and easy to navigate.',
+            questionType: 'LIKERT_5',
+            options: JSON.stringify(['1 - Strongly Disagree', '2 - Disagree', '3 - Neutral', '4 - Agree', '5 - Strongly Agree']),
+            orderIndex: 4,
+            isRequired: true,
+          },
+          {
+            code: 'SQ-05',
+            prompt: 'The system provided feedback promptly and transparently without exposing benchmark grading keys.',
+            questionType: 'LIKERT_5',
+            options: JSON.stringify(['1 - Strongly Disagree', '2 - Disagree', '3 - Neutral', '4 - Agree', '5 - Strongly Agree']),
+            orderIndex: 5,
+            isRequired: true,
+          },
+          {
+            code: 'SQ-06',
+            prompt: 'Overall, this AI evaluation tool is a valuable learning aid for Criminal Law I essay preparation.',
+            questionType: 'LIKERT_5',
+            options: JSON.stringify(['1 - Strongly Disagree', '2 - Disagree', '3 - Neutral', '4 - Agree', '5 - Strongly Agree']),
+            orderIndex: 6,
+            isRequired: true,
+          },
+          {
+            code: 'SQ-07',
+            prompt: 'Please share any qualitative feedback, suggestions, or areas of improvement regarding your assessment experience.',
+            questionType: 'OPEN_TEXT',
+            options: JSON.stringify([]),
+            orderIndex: 7,
+            isRequired: false,
+          },
+        ],
+      },
+    },
+  });
+
+  const expertSurvey = await prisma.surveyQuestionnaire.upsert({
+    where: { id: 'default-expert-capability-survey' },
+    update: {
+      title: 'Legal Expert AI Assessment Capability & Legal Grounding Questionnaire',
+      description: 'Evaluates legal expert judgment regarding the AI Agent\'s evaluation consistency, statutory grounding, rubric alignment, and formative assessment utility.',
+      targetRole: 'EXPERT',
+      version: '1.0',
+      isActive: true,
+      isDemo: true,
+    },
+    create: {
+      id: 'default-expert-capability-survey',
+      title: 'Legal Expert AI Assessment Capability & Legal Grounding Questionnaire',
+      description: 'Evaluates legal expert judgment regarding the AI Agent\'s evaluation consistency, statutory grounding, rubric alignment, and formative assessment utility.',
+      targetRole: 'EXPERT',
+      version: '1.0',
+      isActive: true,
+      isDemo: true,
+      questions: {
+        create: [
+          {
+            code: 'EQ-01',
+            prompt: 'The AI Agent demonstrated consistent evaluation standards across different student essay responses.',
+            questionType: 'LIKERT_5',
+            options: JSON.stringify(['1 - Strongly Disagree', '2 - Disagree', '3 - Neutral', '4 - Agree', '5 - Strongly Agree']),
+            orderIndex: 1,
+            isRequired: true,
+          },
+          {
+            code: 'EQ-02',
+            prompt: 'The AI Agent accurately identified essential statutory elements under the Revised Penal Code.',
+            questionType: 'LIKERT_5',
+            options: JSON.stringify(['1 - Strongly Disagree', '2 - Disagree', '3 - Neutral', '4 - Agree', '5 - Strongly Agree']),
+            orderIndex: 2,
+            isRequired: true,
+          },
+          {
+            code: 'EQ-03',
+            prompt: 'The numerical scores assigned by the AI Agent appropriately reflected the quality of student legal reasoning.',
+            questionType: 'LIKERT_5',
+            options: JSON.stringify(['1 - Strongly Disagree', '2 - Disagree', '3 - Neutral', '4 - Agree', '5 - Strongly Agree']),
+            orderIndex: 3,
+            isRequired: true,
+          },
+          {
+            code: 'EQ-04',
+            prompt: 'The qualitative scoring rationales produced by the AI were sound and grounded in Philippine jurisprudence.',
+            questionType: 'LIKERT_5',
+            options: JSON.stringify(['1 - Strongly Disagree', '2 - Disagree', '3 - Neutral', '4 - Agree', '5 - Strongly Agree']),
+            orderIndex: 4,
+            isRequired: true,
+          },
+          {
+            code: 'EQ-05',
+            prompt: 'The iterative refinement process (V1 -> V2 -> V3) noticeably improved the agent\'s alignment with expert legal standards.',
+            questionType: 'LIKERT_5',
+            options: JSON.stringify(['1 - Strongly Disagree', '2 - Disagree', '3 - Neutral', '4 - Agree', '5 - Strongly Agree']),
+            orderIndex: 5,
+            isRequired: true,
+          },
+          {
+            code: 'EQ-06',
+            prompt: 'The AI Agent demonstrates sufficient rigor and reliability for formative written-answer legal assessment.',
+            questionType: 'LIKERT_5',
+            options: JSON.stringify(['1 - Strongly Disagree', '2 - Disagree', '3 - Neutral', '4 - Agree', '5 - Strongly Agree']),
+            orderIndex: 6,
+            isRequired: true,
+          },
+          {
+            code: 'EQ-07',
+            prompt: 'Please provide overarching qualitative feedback regarding the AI Agent\'s capabilities and suitability for legal education research.',
+            questionType: 'OPEN_TEXT',
+            options: JSON.stringify([]),
+            orderIndex: 7,
+            isRequired: false,
+          },
+        ],
+      },
+    },
+  });
+  console.log('✅ Seeded configurable Student Usability & Expert Capability Questionnaires');
+
+  // 6. Seed Initial Audit Log
   await prisma.auditLog.create({
     data: {
       userEmail: 'system@yawa.local',
@@ -278,6 +442,7 @@ async function main() {
         seededQuestions: questions.map((q) => q.code),
         seededRubric: defaultRubric.id,
         seededAgentVersion: 'V1',
+        seededSurveys: [studentSurvey.id, expertSurvey.id],
       }),
       isDemo: true,
     },

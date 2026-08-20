@@ -10,6 +10,10 @@ import evaluationRoutes from './routes/evaluation.routes';
 import expertEvaluationRoutes from './routes/expert-evaluation.routes';
 import comparisonRoutes from './routes/comparison.routes';
 import refinementRoutes from './routes/refinement.routes';
+import finalEvaluationRoutes from './routes/final-evaluation.routes';
+import surveyRoutes from './routes/survey.routes';
+import statisticsRoutes from './routes/statistics.routes';
+import exportRoutes from './routes/export.routes';
 
 export const app = express();
 
@@ -37,6 +41,10 @@ app.use('/api/evaluations', evaluationRoutes);
 app.use('/api/expert', expertEvaluationRoutes);
 app.use('/api/comparisons', comparisonRoutes);
 app.use('/api/refinements', refinementRoutes);
+app.use('/api/final-reviews', finalEvaluationRoutes);
+app.use('/api/surveys', surveyRoutes);
+app.use('/api/statistics', statisticsRoutes);
+app.use('/api/exports', exportRoutes);
 
 // 404 Handler
 app.use((req: Request, res: Response) => {
