@@ -8,10 +8,11 @@ const evaluation_service_1 = require("./evaluation.service");
 class AssessmentSessionService {
     /**
      * Retrieves active session or latest submitted session.
-     * If neither exists, initializes a new session capturing the full questionsSnapshot.
+     * If neither exists, initializes a new session.
      */
     static async getOrCreateActiveSession(studentId, isDemo = true) {
-        let session = await prisma_1.prisma.assessmentSession.findFirst({
+        // 1. Check for active IN_PROGRESS session
+        const inProgress = await prisma_1.prisma.assessmentSession.findFirst({
             where: {
                 studentId,
                 status: 'IN_PROGRESS',
@@ -20,69 +21,126 @@ class AssessmentSessionService {
                 drafts: true,
             },
         });
-        if (!session) {
-            // Check if student already has a submitted assessment session
-            const latestSubmitted = await prisma_1.prisma.assessmentSession.findFirst({
+        if (inProgress) {
+            const draftsMap = {};
+            for (const d of inProgress.drafts) {
+                draftsMap[d.questionId] = d.answerText;
+            }
+            return session_dto_1.SessionDTO.toStudentDTO(inProgress, draftsMap);
+        }
+        // 2. Check for latest SUBMITTED session
+        const latestSubmitted = await prisma_1.prisma.assessmentSession.findFirst({
+            where: {
+                studentId,
+                status: 'SUBMITTED',
+            },
+            orderBy: { submittedAt: 'desc' },
+            include: {
+                drafts: true,
+            },
+        });
+        if (latestSubmitted) {
+            const draftsMap = {};
+            for (const d of latestSubmitted.drafts) {
+                draftsMap[d.questionId] = d.answerText;
+            }
+            return session_dto_1.SessionDTO.toStudentDTO(latestSubmitted, draftsMap);
+        }
+        // 3. Neither exists: create initial session
+        return this.createAssessmentSession(studentId, isDemo);
+    }
+    /**
+     * Creates a new assessment session.
+     * Enforces single-attempt protocol for research participants (isDemo: false).
+     * Permits multi-attempt testing for demo users (isDemo: true).
+     */
+    static async createAssessmentSession(studentId, isDemo = true) {
+        // If an IN_PROGRESS session already exists, return it
+        const existingInProgress = await prisma_1.prisma.assessmentSession.findFirst({
+            where: {
+                studentId,
+                status: 'IN_PROGRESS',
+            },
+            include: {
+                drafts: true,
+            },
+        });
+        if (existingInProgress) {
+            const draftsMap = {};
+            for (const d of existingInProgress.drafts) {
+                draftsMap[d.questionId] = d.answerText;
+            }
+            return session_dto_1.SessionDTO.toStudentDTO(existingInProgress, draftsMap);
+        }
+        // Single-Attempt Research Protocol Enforcement:
+        // Real research participants (isDemo: false) with an existing submitted session cannot create a new attempt
+        if (!isDemo) {
+            const existingSubmitted = await prisma_1.prisma.assessmentSession.findFirst({
                 where: {
                     studentId,
                     status: 'SUBMITTED',
                 },
-                orderBy: { submittedAt: 'desc' },
-                include: {
-                    drafts: true,
-                },
             });
-            if (latestSubmitted) {
-                const draftsMap = {};
-                for (const d of latestSubmitted.drafts) {
-                    draftsMap[d.questionId] = d.answerText;
-                }
-                return session_dto_1.SessionDTO.toStudentDTO(latestSubmitted, draftsMap);
+            if (existingSubmitted) {
+                throw new Error('Research study protocol error: Participants are permitted exactly one immutable assessment attempt.');
             }
-            // Capture full questions snapshot from currently active questions
-            const activeQuestions = await prisma_1.prisma.question.findMany({
-                where: { isActive: true },
-                orderBy: { orderIndex: 'asc' },
-            });
-            if (activeQuestions.length === 0) {
-                throw new Error('No active Criminal Law I questions available for assessment.');
-            }
-            const fullQuestionsSnapshot = activeQuestions.map((q) => ({
-                id: q.id,
-                code: q.code,
-                title: q.title,
-                scenario: q.scenario,
-                modelAnswer: q.modelAnswer,
-                statutoryElements: safeParseJson(q.statutoryElements, []),
-                relevantProvisions: safeParseJson(q.relevantProvisions, []),
-                conceptVariations: safeParseJson(q.conceptVariations, []),
-                orderIndex: q.orderIndex,
-            }));
-            session = await prisma_1.prisma.assessmentSession.create({
-                data: {
-                    studentId,
-                    status: 'IN_PROGRESS',
-                    questionsSnapshot: JSON.stringify(fullQuestionsSnapshot),
-                    isDemo,
-                },
-                include: {
-                    drafts: true,
-                },
-            });
-            await audit_service_1.AuditService.logAction({
-                userId: studentId,
-                action: 'START_ASSESSMENT_SESSION',
-                entityType: 'ASSESSMENT_SESSION',
-                entityId: session.id,
-                details: { questionCount: fullQuestionsSnapshot.length, isDemo },
+        }
+        // Capture full questions snapshot from currently active questions
+        const activeQuestions = await prisma_1.prisma.question.findMany({
+            where: { isActive: true },
+            orderBy: { orderIndex: 'asc' },
+        });
+        if (activeQuestions.length === 0) {
+            throw new Error('No active Criminal Law I questions available for assessment.');
+        }
+        const fullQuestionsSnapshot = activeQuestions.map((q) => ({
+            id: q.id,
+            code: q.code,
+            title: q.title,
+            scenario: q.scenario,
+            modelAnswer: q.modelAnswer,
+            statutoryElements: safeParseJson(q.statutoryElements, []),
+            relevantProvisions: safeParseJson(q.relevantProvisions, []),
+            conceptVariations: safeParseJson(q.conceptVariations, []),
+            orderIndex: q.orderIndex,
+        }));
+        const session = await prisma_1.prisma.assessmentSession.create({
+            data: {
+                studentId,
+                status: 'IN_PROGRESS',
+                questionsSnapshot: JSON.stringify(fullQuestionsSnapshot),
                 isDemo,
-            });
-        }
-        const draftsMap = {};
-        for (const d of session.drafts) {
-            draftsMap[d.questionId] = d.answerText;
-        }
-        return session_dto_1.SessionDTO.toStudentDTO(session, draftsMap);
+            },
+            include: {
+                drafts: true,
+            },
+        });
+        await audit_service_1.AuditService.logAction({
+            userId: studentId,
+            action: 'START_ASSESSMENT_SESSION',
+            entityType: 'ASSESSMENT_SESSION',
+            entityId: session.id,
+            details: { questionCount: fullQuestionsSnapshot.length, isDemo },
+            isDemo,
+        });
+        return session_dto_1.SessionDTO.toStudentDTO(session, {});
+    }
+    /**
+     * Retrieves all assessment sessions for a student.
+     */
+    static async getStudentSessionHistory(studentId) {
+        const sessions = await prisma_1.prisma.assessmentSession.findMany({
+            where: { studentId },
+            orderBy: { createdAt: 'desc' },
+            include: { drafts: true },
+        });
+        return sessions.map((s) => {
+            const draftsMap = {};
+            for (const d of s.drafts) {
+                draftsMap[d.questionId] = d.answerText;
+            }
+            return session_dto_1.SessionDTO.toStudentDTO(s, draftsMap);
+        });
     }
     /**
      * Retrieves a specific session by ID with security checks.

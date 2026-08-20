@@ -46,15 +46,17 @@ You are an academic legal evaluation AI assessing a law student's written analyt
 Evaluate the student's answer SEMANTICALLY against the model reference answer, statutory elements, and scoring rubric.
 
 CRITICAL EVALUATION RULES:
-1. NON-KEYWORD MATCHING: Evaluate legal concepts, meaning, IRAC reasoning progression, and factual application. Do NOT rely solely on literal keywords. Recognize acceptable legal synonyms and conceptually sound alternative expressions.
+1. NON-KEYWORD MATCHING: Evaluate legal concepts, meaning, IRAC reasoning progression, and factual application. Do NOT rely solely on literal keywords. Recognize acceptable legal synonyms and conceptually sound alternative expressions (e.g. "mistake in the blow" for aberratio ictus, "rational equivalence" for reasonable necessity).
 2. STRICT ANTI-HALLUCINATION & NO FABRICATED PRAISE:
    - Every point awarded MUST be justified by actual text present in the student's response.
    - Do NOT invent Revised Penal Code articles, jurisprudence, cases, legal doctrines, or facts not written by the student.
    - NEVER praise or credit statutory elements, RPC citations, or IRAC reasoning if the student did not articulate them.
-3. ZERO-SCORE RULE FOR NONSUBSTANTIVE OR IRRELEVANT SUBMISSIONS:
+3. QUESTION-SPECIFIC RELEVANCE:
+   - An answer discussing facts, characters, or legal doctrines belonging to an unrelated scenario must receive 0 credit for question-specific factual analysis and statutory grounding.
+4. ZERO-SCORE RULE FOR NONSUBSTANTIVE OR IRRELEVANT SUBMISSIONS:
    - If the student submission is blank, non-substantive (e.g. "I don't know", "idk", "teheee", "no answer", gibberish), or completely irrelevant to Criminal Law I, you MUST award exactly 0 points across all rubric criteria (numericalScore: 0).
    - For 0-point submissions: "strengths" must be empty [], "scoringBasis" must explicitly state that the submission lacked substantive legal analysis, and all statutory elements must be listed in "missingElements".
-4. DYNAMIC SCORING: Calculate criterion scores according to the rubric breakdown. The sum of all criterion maxPoints is exactly ${totalMaxPoints}.
+5. DYNAMIC SCORING: Calculate criterion scores according to the rubric breakdown. The sum of all criterion maxPoints is exactly ${totalMaxPoints}.
 
 === GROUND TRUTH REFERENCE MATERIALS ===
 [QUESTION CODE & TITLE]: ${question.code} - ${question.title}
@@ -131,7 +133,7 @@ You MUST return ONLY a valid JSON object with the following schema:
     }
     /**
      * Generates a grounded deterministic semantic evaluation simulation for local dev/testing.
-     * Accurately differentiates blank, nonsubstantive, irrelevant, partial, and strong responses.
+     * Accurately differentiates question-specific relevance, non-keyword concepts, partial credit, and full IRAC.
      * Tagged with DEMO_SIMULATION.
      */
     static generateDemoSimulation(question, rubricCriteria, studentAnswer, totalMaxPoints) {
@@ -190,8 +192,9 @@ You MUST return ONLY a valid JSON object with the following schema:
             /^asdf/i,
             /^qwerty/i,
         ];
+        const hasAnyLegalTerms = hasGeneralLegalKeywords(lower) || matchesAnyQuestionTerms(lower, question);
         const isNonsubstantive = nonsubstantivePatterns.some((pattern) => pattern.test(lower)) ||
-            (words.length < 8 && !hasAnyLegalKeywords(lower));
+            (words.length < 8 && !hasAnyLegalTerms);
         if (isNonsubstantive) {
             return {
                 numericalScore: 0,
@@ -214,42 +217,34 @@ You MUST return ONLY a valid JSON object with the following schema:
                 reviewFlags: ['DEMO_SIMULATION', 'NONSUBSTANTIVE_SUBMISSION'],
             };
         }
-        // --- CASE C: Completely Irrelevant Content ---
-        const legalKeywords = [
-            'penal code', 'rpc', 'article', 'art.', 'art ', 'felony', 'crime', 'liability', 'liable',
-            'homicide', 'murder', 'intent', 'animus', 'unlawful', 'aggression', 'defense', 'provocation',
-            'exempting', 'justifying', 'mitigating', 'aggravating', 'irresistible force', 'uncontrollable fear',
-            'guilty', 'culpable', 'culpability', 'mens rea', 'act', 'omission', 'punishable', 'offense',
-            'par.', 'paragraph', 'supreme court', 'jurisprudence', 'doctrine', 'weapon', 'chest', 'kill',
-            'juan', 'pedro', 'maria', 'threat', 'gun', 'robbery', 'store'
-        ];
-        const hasLegalRelevance = legalKeywords.some((kw) => lower.includes(kw));
-        if (!hasLegalRelevance && words.length >= 8) {
+        // --- CASE C: Check Relevance to THIS Question Scenario ---
+        const isQuestionRelevant = matchesAnyQuestionTerms(lower, question);
+        if (!isQuestionRelevant && words.length >= 8) {
             return {
                 numericalScore: 0,
                 maxScore: totalMaxPoints,
-                scoringBasis: `The submitted essay is completely irrelevant to Philippine Criminal Law I and the presented factual scenario (${question.code}).`,
+                scoringBasis: `The submitted response does not address the factual scenario, legal issues, or statutory principles of ${question.code} (${question.title}).`,
                 criterionScores: rubricCriteria.map((c) => ({
                     criterionName: c.name,
                     score: 0,
                     maxPoints: c.maxPoints ?? c.weightPercent ?? 20,
-                    reasoning: `The content does not address ${c.name.toLowerCase()} for this Criminal Law scenario.`,
+                    reasoning: `The content does not address ${c.name.toLowerCase()} for ${question.code}.`,
                 })),
                 strengths: [],
-                missingElements: statutoryElements.length > 0 ? statutoryElements : ['All required Criminal Law I statutory elements'],
+                missingElements: statutoryElements.length > 0 ? statutoryElements : ['All required Criminal Law I statutory elements for this scenario'],
                 areasForImprovement: [
-                    'Ensure your answer directly analyzes the Criminal Law I scenario and Revised Penal Code principles.',
+                    `Ensure your answer directly analyzes the specific facts and legal questions in ${question.code}.`,
                 ],
                 confidenceScore: 0.95,
                 reviewFlags: ['DEMO_SIMULATION', 'IRRELEVANT_SUBMISSION'],
             };
         }
-        // --- CASE D, E, F, G: Substantive Legal Essay Analysis ---
-        // Detect matched statutory elements
+        // --- CASE D, E, F, G, H, I: Substantive Legal Analysis ---
+        // 1. Match Statutory Elements (semantic & concept variations)
         const matchedElements = [];
         const missingElements = [];
         for (const elem of statutoryElements) {
-            const isMatched = checkElementMatch(elem, lower);
+            const isMatched = checkElementMatch(elem, lower, variations);
             if (isMatched) {
                 matchedElements.push(elem);
             }
@@ -257,7 +252,14 @@ You MUST return ONLY a valid JSON object with the following schema:
                 missingElements.push(elem);
             }
         }
-        // Detect matched provisions (e.g. Art. 11, Art. 12, Art. 249, RPC, etc.)
+        // 2. Match Concept Variations (e.g. "mistake in the blow", "unintended victim", "accidental", "rational equivalence")
+        const matchedVariations = [];
+        for (const v of variations) {
+            if (lower.includes(v.toLowerCase())) {
+                matchedVariations.push(v);
+            }
+        }
+        // 3. Match Provisions (e.g. Art. 4, Art. 11, Art. 12, Art. 13, Art. 249, RPC)
         const matchedProvisions = [];
         for (const prov of provisions) {
             const isProvMatched = checkProvisionMatch(prov, lower);
@@ -265,11 +267,11 @@ You MUST return ONLY a valid JSON object with the following schema:
                 matchedProvisions.push(prov);
             }
         }
-        // Detect IRAC structural markers
-        const hasIssue = /\b(issue|whether|liab|charged|offense)\b/i.test(lower);
-        const hasRule = /\b(article|art\.?|rpc|penal code|elements?|rule|law|provision)\b/i.test(lower);
-        const hasAnalysis = /\b(because|since|applying|in this case|here|fact|shot|shoot|compelled|weapon|direct|consequence)\b/i.test(lower);
-        const hasConclusion = /\b(therefore|hence|conclude|conclusion|in conclusion|is liable|not liable|guilty|exempt|responsible)\b/i.test(lower);
+        // 4. Detect IRAC Structural Progression
+        const hasIssue = /\b(issue|whether|liab|charged|offense|held liable)\b/i.test(lower);
+        const hasRule = /\b(article|art\.?|rpc|penal code|elements?|rule|law|provision|doctrine|statute)\b/i.test(lower);
+        const hasAnalysis = /\b(because|since|applying|in this case|here|fact|shot|shoot|compelled|struck|blow|weapon|natural|consequence)\b/i.test(lower);
+        const hasConclusion = /\b(therefore|hence|conclude|conclusion|in conclusion|is liable|not liable|guilty|exempt|responsible|mitigated)\b/i.test(lower);
         let iracCount = 0;
         if (hasIssue)
             iracCount++;
@@ -280,22 +282,22 @@ You MUST return ONLY a valid JSON object with the following schema:
         if (hasConclusion)
             iracCount++;
         const totalElementsCount = Math.max(statutoryElements.length, 1);
-        const elementRatio = matchedElements.length / totalElementsCount;
+        const elementRatio = (matchedElements.length + matchedVariations.length * 0.5) / totalElementsCount;
         const provisionRatio = provisions.length > 0 ? (matchedProvisions.length > 0 ? 1.0 : 0.0) : 0.5;
         const iracRatio = iracCount / 4;
         // Length-based substantive depth factor
-        let lengthFactor = 0.3;
+        let lengthFactor = 0.35;
         if (words.length >= 100)
             lengthFactor = 1.0;
         else if (words.length >= 60)
-            lengthFactor = 0.85;
+            lengthFactor = 0.88;
         else if (words.length >= 30)
-            lengthFactor = 0.65;
+            lengthFactor = 0.70;
         else if (words.length >= 15)
-            lengthFactor = 0.45;
+            lengthFactor = 0.50;
         // Overall quality percentage calculation
         const rawQuality = (elementRatio * 0.45 + provisionRatio * 0.25 + iracRatio * 0.30) * lengthFactor;
-        const qualityRatio = Math.min(Math.max(rawQuality, 0.10), 0.98);
+        const qualityRatio = Math.min(Math.max(rawQuality, 0.08), 1.0);
         // Compute criterion-level scores
         let totalScore = 0;
         const criterionScores = rubricCriteria.map((c) => {
@@ -303,16 +305,16 @@ You MUST return ONLY a valid JSON object with the following schema:
             let cRatio = qualityRatio;
             const cNameLower = c.name.toLowerCase();
             if (cNameLower.includes('element') || cNameLower.includes('issue')) {
-                cRatio = (elementRatio * 0.7 + (hasIssue ? 0.3 : 0)) * lengthFactor;
+                cRatio = (elementRatio * 0.7 + (hasIssue ? 0.3 : 0.1)) * lengthFactor;
             }
             else if (cNameLower.includes('statutory') || cNameLower.includes('rule') || cNameLower.includes('legal')) {
                 cRatio = (provisionRatio * 0.6 + elementRatio * 0.4) * lengthFactor;
             }
             else if (cNameLower.includes('analysis') || cNameLower.includes('reasoning') || cNameLower.includes('application')) {
-                cRatio = ((hasAnalysis ? 0.5 : 0.1) + elementRatio * 0.5) * lengthFactor;
+                cRatio = ((hasAnalysis ? 0.5 : 0.2) + elementRatio * 0.5) * lengthFactor;
             }
             else if (cNameLower.includes('structure') || cNameLower.includes('irac') || cNameLower.includes('clarity')) {
-                cRatio = iracRatio * lengthFactor;
+                cRatio = Math.max(iracRatio * lengthFactor, 0.15);
             }
             else if (cNameLower.includes('conclusion')) {
                 cRatio = (hasConclusion ? 0.9 : 0.2) * lengthFactor;
@@ -326,22 +328,25 @@ You MUST return ONLY a valid JSON object with the following schema:
                 maxPoints: maxPts,
                 reasoning: `Evaluated against ${question.code}: ${score >= maxPts * 0.75
                     ? 'Demonstrates proficient legal reasoning with sound statutory grounding.'
-                    : score >= maxPts * 0.5
+                    : score >= maxPts * 0.4
                         ? 'Demonstrates partial application of relevant legal concepts but omits key statutory elements.'
-                        : 'Minimal or developing application of required legal principles.'}`,
+                        : 'Minimal conceptual recognition with significant gaps in statutory analysis.'}`,
             };
         });
         const strengths = [];
         if (matchedElements.length > 0) {
             strengths.push(`Identified core statutory elements: ${matchedElements.slice(0, 2).join('; ')}`);
         }
+        else if (matchedVariations.length > 0) {
+            strengths.push(`Recognized relevant conceptual elements: ${matchedVariations.slice(0, 2).join('; ')}`);
+        }
         if (matchedProvisions.length > 0) {
             strengths.push(`Cited relevant statutory framework: ${matchedProvisions.slice(0, 2).join('; ')}`);
         }
-        if (hasConclusion && words.length >= 20) {
-            strengths.push('Formulated an explicit legal conclusion based on the scenario facts.');
+        if (hasConclusion && words.length >= 15) {
+            strengths.push('Formulated a clear legal conclusion based on scenario facts.');
         }
-        if (hasAnalysis && words.length >= 40) {
+        if (hasAnalysis && words.length >= 35) {
             strengths.push('Demonstrated analytical application connecting facts to legal concepts.');
         }
         const areasForImprovement = [];
@@ -355,7 +360,7 @@ You MUST return ONLY a valid JSON object with the following schema:
             areasForImprovement.push('Structure the essay rigorously using explicit Issue, Rule, Analysis, and Conclusion paragraphs.');
         }
         const numericalScore = Math.round(totalScore * 10) / 10;
-        const scoringBasis = `The student response provides an essay of ${words.length} words for ${question.title}. Identified ${matchedElements.length}/${totalElementsCount} statutory elements and ${matchedProvisions.length} relevant provisions. IRAC reasoning structure was evaluated as ${numericalScore >= 75 ? 'proficient' : numericalScore >= 45 ? 'satisfactory with gaps' : 'developing'}.`;
+        const scoringBasis = `The student response provides an essay of ${words.length} words for ${question.title}. Identified ${matchedElements.length}/${totalElementsCount} statutory elements, ${matchedVariations.length} concept variations, and ${matchedProvisions.length} relevant provisions. IRAC reasoning structure was evaluated as ${numericalScore >= 75 ? 'proficient' : numericalScore >= 40 ? 'satisfactory with gaps' : 'developing / minimal'}.`;
         return {
             numericalScore,
             maxScore: totalMaxPoints,
@@ -370,14 +375,49 @@ You MUST return ONLY a valid JSON object with the following schema:
     }
 }
 exports.AiEvaluatorService = AiEvaluatorService;
-function hasAnyLegalKeywords(text) {
+function hasGeneralLegalKeywords(text) {
     const basicLegal = [
         'homicide', 'murder', 'crime', 'liable', 'liability', 'article', 'art.', 'rpc', 'penal',
-        'defense', 'intent', 'exempt', 'justif', 'force', 'fear', 'kill', 'guilty', 'robbery'
+        'defense', 'intent', 'exempt', 'justif', 'force', 'fear', 'kill', 'guilty', 'robbery',
+        'aberratio', 'praeter', 'intentionem', 'ictus', 'proximate', 'consequence', 'unintended'
     ];
     return basicLegal.some((k) => text.includes(k));
 }
-function checkElementMatch(elementText, studentLower) {
+function matchesAnyQuestionTerms(studentLower, question) {
+    const qCode = (question.code || '').toUpperCase();
+    const title = (question.title || '').toLowerCase();
+    const scenario = (question.scenario || '').toLowerCase();
+    // If question is Q1 (Self-Defense / Knife confrontation)
+    if (qCode.includes('Q01') || title.includes('self-defense') || scenario.includes('knife')) {
+        const q1Terms = [
+            'self-defense', 'self defense', 'unlawful aggression', 'reasonable necessity',
+            'provocation', 'article 11', 'art. 11', 'art 11', 'knife', 'wallet', 'chest', 'firearm',
+            'licensed firearm', 'brandish', 'thrust'
+        ];
+        return q1Terms.some((t) => studentLower.includes(t));
+    }
+    // If question is Q2 (Praeter Intentionem / Aberratio Ictus / Slap / Bystander)
+    if (qCode.includes('Q02') || title.includes('praeter') || title.includes('aberratio') || scenario.includes('slap')) {
+        const q2Terms = [
+            'praeter', 'aberratio', 'ictus', 'slap', 'ducked', 'curb', 'skull fracture',
+            'article 4', 'art. 4', 'art 4', 'article 13', 'art. 13', 'art 13',
+            'unintended', 'accidental', 'mistake in the blow', 'transferred intent', 'bystander',
+            'elderly', 'proximate cause', 'consequence'
+        ];
+        // Check specific character references to X, Y, or Z (with word boundaries)
+        const hasXYZ = /\b[xyz]\b/i.test(studentLower);
+        const hasQ2Term = q2Terms.some((t) => studentLower.includes(t));
+        return hasXYZ || hasQ2Term;
+    }
+    // Generic fallback: check concept variations
+    const variations = Array.isArray(question.conceptVariations)
+        ? question.conceptVariations
+        : typeof question.conceptVariations === 'string'
+            ? safeParseJson(question.conceptVariations, [])
+            : [];
+    return variations.some((v) => studentLower.includes(v.toLowerCase()));
+}
+function checkElementMatch(elementText, studentLower, variations = []) {
     if (!elementText)
         return false;
     const eLower = elementText.toLowerCase();
@@ -412,12 +452,33 @@ function checkElementMatch(elementText, studentLower) {
             studentLower.includes('vital organ') ||
             studentLower.includes('chest'));
     }
-    if (eLower.includes('killing') || eLower.includes('death')) {
-        return (studentLower.includes('killed') ||
-            studentLower.includes('died') ||
-            studentLower.includes('death') ||
-            studentLower.includes('homicide') ||
-            studentLower.includes('murder'));
+    if (eLower.includes('initial intentional felony') || eLower.includes('felonious act')) {
+        return (studentLower.includes('initial') ||
+            studentLower.includes('slap') ||
+            studentLower.includes('felony') ||
+            studentLower.includes('unlawful act') ||
+            studentLower.includes('wrongful act') ||
+            studentLower.includes('assault'));
+    }
+    if (eLower.includes('proximate cause') || eLower.includes('consequence')) {
+        return (studentLower.includes('proximate cause') ||
+            studentLower.includes('consequence') ||
+            studentLower.includes('result') ||
+            studentLower.includes('direct result') ||
+            studentLower.includes('caused'));
+    }
+    if (eLower.includes('praeter intentionem') || eLower.includes('lack of intention to commit so grave')) {
+        return (studentLower.includes('praeter intentionem') ||
+            studentLower.includes('lack of intention') ||
+            studentLower.includes('not intend') ||
+            studentLower.includes('did not intend') ||
+            studentLower.includes('unintended') ||
+            studentLower.includes('accidental'));
+    }
+    // Check variations
+    for (const v of variations) {
+        if (studentLower.includes(v.toLowerCase()))
+            return true;
     }
     // Fallback: extract terms with >= 2 matching significant words
     const terms = extractKeyTerms(elementText);
@@ -430,7 +491,7 @@ function checkProvisionMatch(provisionText, studentLower) {
     if (!provisionText)
         return false;
     const pLower = provisionText.toLowerCase();
-    // Check article numbers (e.g. "11", "12", "249", "248", "6", "14")
+    // Check article numbers (e.g. "4", "11", "12", "13", "249", "248")
     const articleMatch = pLower.match(/art(?:icle|\.)?\s*(\d+)/i);
     if (articleMatch) {
         const artNum = articleMatch[1];

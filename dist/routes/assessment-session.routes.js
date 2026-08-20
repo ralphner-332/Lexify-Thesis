@@ -7,6 +7,8 @@ const rbac_1 = require("../middleware/rbac");
 const router = (0, express_1.Router)();
 // Student-accessible assessment session routes
 router.get('/active', auth_1.authenticateToken, (0, rbac_1.requireRole)('STUDENT', 'ADMIN'), assessment_session_controller_1.AssessmentSessionController.getActiveSession);
+router.post('/new', auth_1.authenticateToken, (0, rbac_1.requireRole)('STUDENT', 'ADMIN'), assessment_session_controller_1.AssessmentSessionController.createSession);
+router.get('/history', auth_1.authenticateToken, (0, rbac_1.requireRole)('STUDENT', 'ADMIN'), assessment_session_controller_1.AssessmentSessionController.listStudentSessions);
 router.post('/draft', auth_1.authenticateToken, (0, rbac_1.requireRole)('STUDENT', 'ADMIN'), assessment_session_controller_1.AssessmentSessionController.saveDraft);
 router.get('/:id/review', auth_1.authenticateToken, (0, rbac_1.requireRole)('STUDENT', 'ADMIN'), assessment_session_controller_1.AssessmentSessionController.getReview);
 router.post('/:id/submit', auth_1.authenticateToken, (0, rbac_1.requireRole)('STUDENT', 'ADMIN'), assessment_session_controller_1.AssessmentSessionController.submit);

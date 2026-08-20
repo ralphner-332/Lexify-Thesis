@@ -15,6 +15,30 @@ class AssessmentSessionController {
             return res.status(500).json({ success: false, error: error.message || 'Failed to fetch session' });
         }
     }
+    static async createSession(req, res) {
+        try {
+            if (!req.user) {
+                return res.status(401).json({ success: false, error: 'Not authenticated' });
+            }
+            const session = await assessment_session_service_1.AssessmentSessionService.createAssessmentSession(req.user.id, req.user.isDemo);
+            return res.status(201).json({ success: true, data: session });
+        }
+        catch (error) {
+            return res.status(403).json({ success: false, error: error.message || 'Failed to create assessment session' });
+        }
+    }
+    static async listStudentSessions(req, res) {
+        try {
+            if (!req.user) {
+                return res.status(401).json({ success: false, error: 'Not authenticated' });
+            }
+            const sessions = await assessment_session_service_1.AssessmentSessionService.getStudentSessionHistory(req.user.id);
+            return res.status(200).json({ success: true, data: sessions });
+        }
+        catch (error) {
+            return res.status(500).json({ success: false, error: error.message || 'Failed to list sessions' });
+        }
+    }
     static async getSessionById(req, res) {
         try {
             if (!req.user) {
