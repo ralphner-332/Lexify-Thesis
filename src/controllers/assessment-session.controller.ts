@@ -18,6 +18,22 @@ export class AssessmentSessionController {
     }
   }
 
+  static async getSessionById(req: Request, res: Response) {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ success: false, error: 'Not authenticated' });
+      }
+
+      const session = await AssessmentSessionService.getSessionById(
+        req.params.id,
+        req.user.id
+      );
+      return res.status(200).json({ success: true, data: session });
+    } catch (error: any) {
+      return res.status(400).json({ success: false, error: error.message || 'Failed to fetch session' });
+    }
+  }
+
   static async saveDraft(req: Request, res: Response) {
     try {
       if (!req.user) {

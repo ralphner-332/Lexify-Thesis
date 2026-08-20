@@ -5,7 +5,8 @@ import { EvaluationService } from './evaluation.service';
 
 export class AssessmentSessionService {
   /**
-   * Retrieves active session or initializes a new session capturing the full questionsSnapshot.
+   * Retrieves active session or latest submitted session.
+   * If neither exists, initializes a new session capturing the full questionsSnapshot.
    */
   static async getOrCreateActiveSession(studentId: string, isDemo: boolean = true) {
     let session = await prisma.assessmentSession.findFirst({
@@ -19,6 +20,26 @@ export class AssessmentSessionService {
     });
 
     if (!session) {
+      // Check if student already has a submitted assessment session
+      const latestSubmitted = await prisma.assessmentSession.findFirst({
+        where: {
+          studentId,
+          status: 'SUBMITTED',
+        },
+        orderBy: { submittedAt: 'desc' },
+        include: {
+          drafts: true,
+        },
+      });
+
+      if (latestSubmitted) {
+        const draftsMap: Record<string, string> = {};
+        for (const d of latestSubmitted.drafts) {
+          draftsMap[d.questionId] = d.answerText;
+        }
+        return SessionDTO.toStudentDTO(latestSubmitted, draftsMap);
+      }
+
       // Capture full questions snapshot from currently active questions
       const activeQuestions = await prisma.question.findMany({
         where: { isActive: true },
@@ -61,6 +82,31 @@ export class AssessmentSessionService {
         details: { questionCount: fullQuestionsSnapshot.length, isDemo },
         isDemo,
       });
+    }
+
+    const draftsMap: Record<string, string> = {};
+    for (const d of session.drafts) {
+      draftsMap[d.questionId] = d.answerText;
+    }
+
+    return SessionDTO.toStudentDTO(session, draftsMap);
+  }
+
+  /**
+   * Retrieves a specific session by ID with security checks.
+   */
+  static async getSessionById(sessionId: string, studentId: string) {
+    const session = await prisma.assessmentSession.findUnique({
+      where: { id: sessionId },
+      include: { drafts: true },
+    });
+
+    if (!session) {
+      throw new Error('Assessment session not found');
+    }
+
+    if (session.studentId !== studentId) {
+      throw new Error('Unauthorized: Session does not belong to the requesting student');
     }
 
     const draftsMap: Record<string, string> = {};

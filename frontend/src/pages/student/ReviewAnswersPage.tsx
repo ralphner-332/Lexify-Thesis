@@ -47,9 +47,9 @@ export const ReviewAnswersPage: React.FC = () => {
     try {
       setSubmitting(true);
       setError(null);
-      await api.sessions.submit(reviewData.session.id);
+      const res = await api.sessions.submit(reviewData.session.id);
       setShowConfirmModal(false);
-      navigate('/student/assessment/feedback');
+      navigate(`/student/assessment/feedback?sessionId=${res.sessionId || reviewData.session.id}`);
     } catch (err: any) {
       setError(err.message || 'Submission failed');
       setShowConfirmModal(false);

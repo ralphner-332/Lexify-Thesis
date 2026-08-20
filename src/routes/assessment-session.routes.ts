@@ -10,5 +10,6 @@ router.get('/active', authenticateToken, requireRole('STUDENT', 'ADMIN'), Assess
 router.post('/draft', authenticateToken, requireRole('STUDENT', 'ADMIN'), AssessmentSessionController.saveDraft);
 router.get('/:id/review', authenticateToken, requireRole('STUDENT', 'ADMIN'), AssessmentSessionController.getReview);
 router.post('/:id/submit', authenticateToken, requireRole('STUDENT', 'ADMIN'), AssessmentSessionController.submit);
+router.get('/:id', authenticateToken, requireRole('STUDENT', 'ADMIN'), AssessmentSessionController.getSessionById);
 
 export default router;

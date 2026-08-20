@@ -2,8 +2,6 @@ import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Navbar } from '../layout/Navbar';
-import { DisclaimerBanner } from '../layout/DisclaimerBanner';
-import { DisclaimerModal } from './DisclaimerModal';
 import { UserRole } from '../../types';
 
 interface ProtectedLayoutProps {
@@ -38,12 +36,10 @@ export const ProtectedLayout: React.FC<ProtectedLayoutProps> = ({ allowedRoles }
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
-      <DisclaimerBanner />
       <Navbar />
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
         <Outlet />
       </main>
-      <DisclaimerModal />
     </div>
   );
 };

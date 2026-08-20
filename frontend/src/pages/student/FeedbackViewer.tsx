@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../../api/client';
 import { StudentEvaluationFeedback, AssessmentSession } from '../../types';
 import { CriterionProgressBar } from '../../components/common/CriterionProgressBar';
@@ -11,10 +11,14 @@ import {
   Lightbulb,
   ArrowLeft,
   Sparkles,
+  MessageSquareHeart,
 } from 'lucide-react';
 
 export const FeedbackViewer: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const querySessionId = searchParams.get('sessionId');
+
   const [session, setSession] = useState<AssessmentSession | null>(null);
   const [feedbacks, setFeedbacks] = useState<StudentEvaluationFeedback[]>([]);
   const [selectedQuestionIndex, setSelectedQuestionIndex] = useState<number>(0);
@@ -24,8 +28,15 @@ export const FeedbackViewer: React.FC = () => {
   const fetchFeedbackData = async () => {
     try {
       setLoading(true);
-      const activeSessionRes = await api.sessions.getActive();
-      const sess = activeSessionRes.data;
+      setError(null);
+      let sess: AssessmentSession;
+      if (querySessionId) {
+        const sessionRes = await api.sessions.getById(querySessionId);
+        sess = sessionRes.data;
+      } else {
+        const activeSessionRes = await api.sessions.getActive();
+        sess = activeSessionRes.data;
+      }
       setSession(sess);
 
       if (sess.status !== 'SUBMITTED') {
@@ -44,7 +55,7 @@ export const FeedbackViewer: React.FC = () => {
 
   useEffect(() => {
     fetchFeedbackData();
-  }, []);
+  }, [querySessionId]);
 
   if (loading) {
     return (
@@ -116,13 +127,22 @@ export const FeedbackViewer: React.FC = () => {
             </p>
           </div>
 
-          <button
-            onClick={() => navigate('/student')}
-            className="flex items-center space-x-2 px-4 py-2 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-lg text-sm font-semibold transition"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Dashboard</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => navigate('/student/survey')}
+              className="flex items-center space-x-1.5 px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg text-sm font-semibold transition shadow-sm"
+            >
+              <MessageSquareHeart className="w-4 h-4 text-indigo-600" />
+              <span>Take Usability Survey</span>
+            </button>
+            <button
+              onClick={() => navigate('/student')}
+              className="flex items-center space-x-2 px-4 py-2 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-lg text-sm font-semibold transition"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>Dashboard</span>
+            </button>
+          </div>
         </div>
 
         {/* Question Selector Tabs */}

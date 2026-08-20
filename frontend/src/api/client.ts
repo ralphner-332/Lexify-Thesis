@@ -279,6 +279,10 @@ class ApiClient {
       );
     },
 
+    getById: async (sessionId: string) => {
+      return this.request<{ success: boolean; data: AssessmentSession }>(`/sessions/${sessionId}`);
+    },
+
     submit: async (sessionId: string) => {
       return this.request<{ success: boolean; message: string; sessionId: string; submittedAt: string }>(
         `/sessions/${sessionId}/submit`,
