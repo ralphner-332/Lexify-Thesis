@@ -8,7 +8,7 @@ import { prisma } from './lib/prisma';
 import bcrypt from 'bcryptjs';
 
 async function runLiveResearchDryRun() {
-  console.log('🧪 Starting YAWA Live Research-Mode End-to-End Dry Run...\n');
+  console.log('🧪 Starting Lexify Live Research-Mode End-to-End Dry Run...\n');
 
   // =========================================================================
   // STEP 1: CREATE CONTROLLED NON-DEMO RESEARCH PARTICIPANT

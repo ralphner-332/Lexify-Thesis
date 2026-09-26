@@ -51,7 +51,7 @@ async function verifyPhase4Behavior() {
         linkedRefinementIds: ['GAP-001'],
       },
     },
-    { id: adminId, email: 'admin@yawa.local' }
+    { id: adminId, email: 'admin@lexify.local' }
   );
 
   // Branch V3
@@ -69,12 +69,12 @@ async function verifyPhase4Behavior() {
         linkedRefinementIds: ['GAP-002'],
       },
     },
-    { id: adminId, email: 'admin@yawa.local' }
+    { id: adminId, email: 'admin@lexify.local' }
   );
 
   // Lock and activate V3
-  await AgentVersionService.lockVersion(v3.id, { id: adminId, email: 'admin@yawa.local' });
-  await AgentVersionService.activateVersion(v3.id, { id: adminId, email: 'admin@yawa.local' });
+  await AgentVersionService.lockVersion(v3.id, { id: adminId, email: 'admin@lexify.local' });
+  await AgentVersionService.activateVersion(v3.id, { id: adminId, email: 'admin@lexify.local' });
 
   // Create student session under V3 (Demo session for testing)
   const session = await AssessmentSessionService.getOrCreateActiveSession(studentId, true);

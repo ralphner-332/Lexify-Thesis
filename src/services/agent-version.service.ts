@@ -164,7 +164,7 @@ export class AgentVersionService {
     const newChangelogEntry = {
       ...input.changelogEntry,
       approverId: user?.id || 'admin',
-      approverEmail: user?.email || 'admin@yawa.local',
+      approverEmail: user?.email || 'admin@lexify.local',
       timestamp: new Date().toISOString(),
     };
     const combinedChangelog = [...parentChangelog, newChangelogEntry];

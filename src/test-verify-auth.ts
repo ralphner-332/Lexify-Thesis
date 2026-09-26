@@ -2,14 +2,14 @@ import { AuthService } from './services/auth.service';
 import { prisma } from './lib/prisma';
 
 async function verifyAuthSystem() {
-  console.log('🧪 Starting YAWA Authentication & Authorization Verification Suite...\n');
+  console.log('🧪 Starting Lexify Authentication & Authorization Verification Suite...\n');
 
   // 1. Student Quick Login
   console.log('1. Testing Student Quick Login...');
   const studentAuth = await AuthService.quickLogin('STUDENT');
   console.assert(!!studentAuth.token, 'Student login must return token');
   console.assert(studentAuth.user.role === 'STUDENT', 'User role must be STUDENT');
-  console.assert(studentAuth.user.email === 'student@yawa.local', 'User email must match student@yawa.local');
+  console.assert(studentAuth.user.email === 'student@lexify.local', 'User email must match student@lexify.local');
   console.log(`   ✓ Student quick-login succeeded: ${studentAuth.user.name} (${studentAuth.user.role})`);
 
   // 2. Expert Quick Login
@@ -17,7 +17,7 @@ async function verifyAuthSystem() {
   const expertAuth = await AuthService.quickLogin('EXPERT');
   console.assert(!!expertAuth.token, 'Expert login must return token');
   console.assert(expertAuth.user.role === 'EXPERT', 'User role must be EXPERT');
-  console.assert(expertAuth.user.email === 'expert@yawa.local', 'User email must match expert@yawa.local');
+  console.assert(expertAuth.user.email === 'expert@lexify.local', 'User email must match expert@lexify.local');
   console.log(`   ✓ Expert quick-login succeeded: ${expertAuth.user.name} (${expertAuth.user.role})`);
 
   // 3. Admin Quick Login
@@ -25,20 +25,20 @@ async function verifyAuthSystem() {
   const adminAuth = await AuthService.quickLogin('ADMIN');
   console.assert(!!adminAuth.token, 'Admin login must return token');
   console.assert(adminAuth.user.role === 'ADMIN', 'User role must be ADMIN');
-  console.assert(adminAuth.user.email === 'admin@yawa.local', 'User email must match admin@yawa.local');
+  console.assert(adminAuth.user.email === 'admin@lexify.local', 'User email must match admin@lexify.local');
   console.log(`   ✓ Admin quick-login succeeded: ${adminAuth.user.name} (${adminAuth.user.role})`);
 
   // 4. Credential Login (Valid Credentials)
   console.log('4. Testing Standard Credential Login...');
-  const credAuth = await AuthService.login('student@yawa.local', 'Password123!');
+  const credAuth = await AuthService.login('student@lexify.local', 'Password123!');
   console.assert(!!credAuth.token, 'Credential login must return token');
   console.assert(credAuth.user.id === studentAuth.user.id, 'User IDs must match');
-  console.log(`   ✓ Standard credential login succeeded for student@yawa.local`);
+  console.log(`   ✓ Standard credential login succeeded for student@lexify.local`);
 
   // 5. Credential Login (Invalid Password)
   console.log('5. Testing Invalid Credentials Rejection...');
   try {
-    await AuthService.login('student@yawa.local', 'WrongPassword!');
+    await AuthService.login('student@lexify.local', 'WrongPassword!');
     console.error('   ❌ FAILED: Invalid password was accepted!');
   } catch (err: any) {
     console.log(`   ✓ Rejected invalid password cleanly: "${err.message}"`);

@@ -194,13 +194,16 @@ export const ExpertGradingWorkspace: React.FC = () => {
         </div>
 
         {/* Live Score & Actions */}
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-4">
           <div className="text-right">
-            <span className="text-[10px] uppercase font-bold text-slate-400 block">Total Score</span>
-            <span className="text-xl font-black text-indigo-700">
-              {currentTotalScore}{' '}
-              <span className="text-xs font-normal text-slate-400">/ {maxTotalScore} pts</span>
-            </span>
+            <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Weighted / Official Score</span>
+            <div className="flex items-baseline space-x-1.5 justify-end">
+              <span className="text-lg font-bold text-slate-900">{currentTotalScore}%</span>
+              <span className="text-xl font-black text-emerald-700">
+                {(currentTotalScore * 0.05).toFixed(2)}{' '}
+                <span className="text-xs font-bold text-emerald-600">/ 5.00</span>
+              </span>
+            </div>
           </div>
 
           {!isSubmitted && (
@@ -209,7 +212,7 @@ export const ExpertGradingWorkspace: React.FC = () => {
                 type="button"
                 onClick={handleSaveDraft}
                 disabled={savingDraft}
-                className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold flex items-center space-x-1 transition"
+                className="px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold flex items-center space-x-1.5 transition active:scale-[0.98]"
               >
                 <Save className="w-3.5 h-3.5" />
                 <span>{savingDraft ? 'Saving...' : 'Save Draft'}</span>
@@ -218,7 +221,7 @@ export const ExpertGradingWorkspace: React.FC = () => {
                 type="button"
                 onClick={() => setShowConfirmModal(true)}
                 disabled={submitting}
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold flex items-center space-x-1 transition shadow-xs"
+                className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center space-x-1.5 transition shadow-xs active:scale-[0.98]"
               >
                 <CheckCircle2 className="w-3.5 h-3.5" />
                 <span>Submit Evaluation</span>
@@ -229,15 +232,15 @@ export const ExpertGradingWorkspace: React.FC = () => {
       </div>
 
       {error && (
-        <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs flex items-center">
-          <AlertTriangle className="w-4 h-4 mr-2 shrink-0" />
+        <div className="p-4 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-xs flex items-center">
+          <AlertTriangle className="w-4 h-4 mr-2 shrink-0 text-rose-600" />
           {error}
         </div>
       )}
 
       {successMsg && (
-        <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-xl text-xs flex items-center">
-          <CheckCircle2 className="w-4 h-4 mr-2 shrink-0" />
+        <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs flex items-center">
+          <CheckCircle2 className="w-4 h-4 mr-2 shrink-0 text-emerald-600" />
           {successMsg}
         </div>
       )}

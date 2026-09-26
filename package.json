@@ -1,7 +1,7 @@
 {
-  "name": "yawa-backend",
+  "name": "lexify-backend",
   "version": "1.0.0",
-  "description": "YAWA — Yet Another Written-Answer AI Agent Backend API",
+  "description": "Lexify — AI Legal Essay Evaluation & Research Platform Backend API",
   "main": "dist/server.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",

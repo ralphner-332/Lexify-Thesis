@@ -12,7 +12,7 @@ import { prisma } from './lib/prisma';
 import bcrypt from 'bcryptjs';
 
 async function runE2EExpertAdminAcceptanceTest() {
-  console.log('🧪 Starting YAWA Complete End-to-End Runtime Acceptance Test (Expert & Admin Workflows)...\n');
+  console.log('🧪 Starting Lexify Complete End-to-End Runtime Acceptance Test (Expert & Admin Workflows)...\n');
 
   const reportResults: Array<{ area: string; status: 'PASS' | 'FAIL'; evidence: string; defect: string }> = [];
 
@@ -20,9 +20,9 @@ async function runE2EExpertAdminAcceptanceTest() {
   // PART 1 — PREPARE TEST DATA (DEMO ONLY)
   // =========================================================================
   console.log('--- PART 1: Preparing Clean Demo Test Data ---');
-  const student = await prisma.user.findFirst({ where: { email: 'student@yawa.local' } });
-  const expert = await prisma.user.findFirst({ where: { email: 'expert@yawa.local' } });
-  const admin = await prisma.user.findFirst({ where: { email: 'admin@yawa.local' } });
+  const student = await prisma.user.findFirst({ where: { email: 'student@lexify.local' } });
+  const expert = await prisma.user.findFirst({ where: { email: 'expert@lexify.local' } });
+  const admin = await prisma.user.findFirst({ where: { email: 'admin@lexify.local' } });
 
   console.assert(!!student && !!expert && !!admin, 'All 3 default demo users must exist');
 
@@ -60,7 +60,7 @@ async function runE2EExpertAdminAcceptanceTest() {
   // =========================================================================
   console.log('--- PART 2: Expert Authentication & Role Verification ---');
   try {
-    const expertAuth = await AuthService.login('expert@yawa.local', 'Password123!');
+    const expertAuth = await AuthService.login('expert@lexify.local', 'Password123!');
     console.assert(expertAuth.user.role === 'EXPERT', 'User role must be EXPERT');
     console.assert(!!expertAuth.token, 'JWT token must be present');
     console.assert(expertAuth.user.isDemo === true, 'isDemo must be true');
@@ -412,7 +412,7 @@ async function runE2EExpertAdminAcceptanceTest() {
   // =========================================================================
   console.log('\n--- PART 8: Admin Authentication & Cross-Role RBAC Security ---');
   try {
-    const adminAuth = await AuthService.login('admin@yawa.local', 'Password123!');
+    const adminAuth = await AuthService.login('admin@lexify.local', 'Password123!');
     console.assert(adminAuth.user.role === 'ADMIN', 'Admin role must be ADMIN');
 
     reportResults.push({
@@ -522,7 +522,7 @@ async function runE2EExpertAdminAcceptanceTest() {
     });
 
     const jsonBundle = await ExportService.exportResearchBundleJSON({ isDemo: true });
-    console.assert(jsonBundle.metadata.title.includes('YAWA'), 'JSON bundle title must be valid');
+    console.assert(jsonBundle.metadata.title.includes('Lexify'), 'JSON bundle title must be valid');
     console.assert(jsonBundle.datasets.aiEvaluations.length >= 2, 'JSON bundle must contain AI evaluations');
 
     reportResults.push({
@@ -542,7 +542,7 @@ async function runE2EExpertAdminAcceptanceTest() {
   console.log('\n--- PART 12: Thesis-Ready Academic Report ---');
   try {
     const reportData = await ExportService.generateAcademicReportData({ isDemo: true });
-    console.assert(reportData.title.includes('YAWA'), 'Report title must exist');
+    console.assert(reportData.title.includes('Lexify'), 'Report title must exist');
     console.assert(reportData.executiveSummary.length > 0, 'Executive summary must exist');
     console.assert(reportData.iterationProgression.iterations.length >= 1, 'Descriptive stats section must exist');
     console.assert(reportData.postV3AgreementFindings.totalReviews >= 1, 'Post-V3 section must exist');
@@ -563,7 +563,7 @@ async function runE2EExpertAdminAcceptanceTest() {
   // PRINT SUMMARY ACCEPTANCE TABLE
   // =========================================================================
   console.log('\n========================================================================================');
-  console.log('YAWA EXPERT & ADMIN WORKFLOW RUNTIME ACCEPTANCE AUDIT RESULTS');
+  console.log('LEXIFY EXPERT & ADMIN WORKFLOW RUNTIME ACCEPTANCE AUDIT RESULTS');
   console.log('========================================================================================');
   console.log('| TEST AREA | STATUS | EVIDENCE | DEFECT FOUND |');
   console.log('| :--- | :---: | :--- | :--- |');

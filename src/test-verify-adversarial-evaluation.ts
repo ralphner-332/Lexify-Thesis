@@ -4,7 +4,7 @@ import { QuestionService } from './services/question.service';
 import { prisma } from './lib/prisma';
 
 async function runAdversarialEvaluationTests() {
-  console.log('🧪 Starting YAWA Adversarial Semantic Evaluation Validity Suite...\n');
+  console.log('🧪 Starting Lexify Adversarial Semantic Evaluation Validity Suite...\n');
 
   // Load baseline question and default rubric
   const defaultRubric = await RubricService.getDefaultRubric();

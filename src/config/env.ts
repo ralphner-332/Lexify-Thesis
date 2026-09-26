@@ -6,7 +6,7 @@ dotenv.config();
 const envSchema = z.object({
   PORT: z.string().default('5000').transform((val) => parseInt(val, 10)),
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
-  JWT_SECRET: z.string().default('yawa_research_secret_key_development_only_min_32_characters'),
+  JWT_SECRET: z.string().default('lexify_research_secret_key_development_only_min_32_characters'),
   DATABASE_URL: z.string().default('file:./dev.db'),
   ALLOW_QUICK_LOGIN: z
     .string()

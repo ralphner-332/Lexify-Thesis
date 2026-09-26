@@ -129,18 +129,53 @@ export interface CriterionScore {
   score: number;
   maxPoints: number;
   reasoning: string;
+  evidence?: string;
+  deficiencies?: string;
+}
+
+export interface ModelConfigSetting {
+  id: string;
+  modelSlot: 'MODEL_A' | 'MODEL_B' | 'MODEL_C';
+  researchName: string;
+  modelFamily: string;
+  parameterClass: string;
+  provider: string;
+  exactModelId: string;
+  endpointUrl?: string | null;
+  apiKeyEnvVar: string;
+  temperature: number;
+  topP: number;
+  maxTokens: number;
+  systemInstructions: string;
+  isLocked: boolean;
+  isDemo: boolean;
+  hasApiKeyConfigured: boolean;
 }
 
 export interface StudentEvaluationFeedback {
   id: string;
   questionId: string;
+  modelSlot?: string;
+  modelFamily?: string;
+  exactModelId?: string;
   numericalScore: number;
+  weightedPercentage?: number;
+  finalScore?: number;
   maxScore: number;
   scoringBasis: string;
   criterionScores: CriterionScore[];
   strengths: string[];
   missingElements: string[];
   areasForImprovement: string[];
+  reviewFlags?: string[];
+  formScore?: number;
+  answerScore?: number;
+  ruleScore?: number;
+  applicationScore?: number;
+  conclusionScore?: number;
+  rawPercentage?: number;
+  rawTenPointGrade?: number;
+  finalRoundedGrade?: number;
 }
 
 export interface AdminEvaluation {
@@ -150,22 +185,37 @@ export interface AdminEvaluation {
   studentName?: string;
   studentEmail?: string;
   questionId: string;
-  agentVersionId: string;
+  agentVersionId?: string;
+  modelSlot: 'MODEL_A' | 'MODEL_B' | 'MODEL_C' | string;
+  modelFamily: string;
+  exactModelId: string;
   questionSnapshot: any;
   modelConfigSnapshot: any;
   rubricSnapshot: any;
   studentAnswer: string;
   numericalScore: number;
+  weightedPercentage?: number;
+  finalScore?: number;
   maxScore: number;
   scoringBasis: string;
   criterionScores: CriterionScore[];
   strengths: string[];
   missingElements: string[];
   areasForImprovement: string[];
+  lexicalAnalysis?: any;
+  semanticAnalysis?: any;
   confidenceScore: number;
   reviewFlags: string[];
   isDemo: boolean;
   createdAt: string;
+  formScore?: number;
+  answerScore?: number;
+  ruleScore?: number;
+  applicationScore?: number;
+  conclusionScore?: number;
+  rawPercentage?: number;
+  rawTenPointGrade?: number;
+  finalRoundedGrade?: number;
 }
 
 // --- Phase 3 Expert, Comparison & Refinement Types ---

@@ -4,7 +4,7 @@ import { QuestionService } from './services/question.service';
 import { prisma } from './lib/prisma';
 
 async function runFinalScoreCalibrationCeilingAudit() {
-  console.log('🧪 Starting YAWA Final Score Calibration & Ceiling Audit...\n');
+  console.log('🧪 Starting Lexify Final Score Calibration & Ceiling Audit...\n');
 
   const defaultRubric = await RubricService.getDefaultRubric();
   const questions = await QuestionService.listQuestions('ADMIN', false);

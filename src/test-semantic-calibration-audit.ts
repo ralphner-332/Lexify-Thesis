@@ -4,7 +4,7 @@ import { QuestionService } from './services/question.service';
 import { prisma } from './lib/prisma';
 
 async function runSemanticCalibrationAudit() {
-  console.log('🧪 Starting YAWA Comprehensive Semantic Calibration Audit...\n');
+  console.log('🧪 Starting Lexify Comprehensive Semantic Calibration Audit...\n');
 
   const defaultRubric = await RubricService.getDefaultRubric();
   const questions = await QuestionService.listQuestions('ADMIN', false);

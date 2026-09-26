@@ -41,7 +41,7 @@ export const QuestionManager: React.FC = () => {
 
   const openCreateModal = () => {
     setEditingQuestion(null);
-    setCode(`CRIM1-Q0${questions.length + 1}`);
+    setCode(`COMM-Q0${questions.length + 1}`);
     setTitle('');
     setScenario('');
     setModelAnswer('');
@@ -109,7 +109,7 @@ export const QuestionManager: React.FC = () => {
   };
 
   const handleDelete = async (id: string, code: string) => {
-    if (!window.confirm(`Are you sure you want to delete research question ${code}?`)) {
+    if (!window.confirm(`Are you sure you want to delete question ${code}?`)) {
       return;
     }
     try {
@@ -121,134 +121,105 @@ export const QuestionManager: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-5xl mx-auto py-2">
       {/* Header */}
-      <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="bg-white border border-slate-200 rounded-lg p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-blue-100 text-brand-800 border border-blue-200">
-              Predetermined Items
-            </span>
+          <div className="text-xs text-slate-500 font-medium mb-1">
+            Commercial Law Assessment Bank
           </div>
-          <h1 className="text-2xl font-bold text-slate-900">Question & Reference Answer Management</h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Configure predetermined Criminal Law I analytical essay items, scenarios, model reference answers, statutory legal elements, and citations.
+          <h1 className="text-xl font-bold text-slate-900 tracking-tight">
+            Questions & Model Answers
+          </h1>
+          <p className="text-xs text-slate-500 mt-1">
+            Manage analytical essay problem scenarios and authoritative model answers.
           </p>
         </div>
         <button
           onClick={openCreateModal}
-          className="flex items-center gap-2 px-4 py-2.5 bg-brand-600 hover:bg-brand-500 text-white rounded-xl text-xs font-semibold shadow-md shadow-brand-600/20 transition-colors shrink-0"
+          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-md text-xs font-medium transition shrink-0"
         >
-          <Plus className="w-4 h-4" />
-          Add Question Item
+          <Plus className="w-3.5 h-3.5" />
+          <span>Add Question</span>
         </button>
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-2 text-red-700 text-sm">
-          <AlertCircle className="w-5 h-5" />
+        <div className="bg-rose-50 border border-rose-200 rounded-md p-3 text-xs text-rose-800 flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
           <span>{error}</span>
         </div>
       )}
 
       {/* Question Cards List */}
       {loading ? (
-        <div className="text-center py-12 text-slate-500">Loading questions inventory...</div>
+        <div className="text-center py-12 text-slate-400 text-xs">Loading questions...</div>
       ) : questions.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-2xl border border-dashed border-slate-300 text-slate-500">
-          No Criminal Law I questions found. Click "Add Question Item" to author the first item.
+        <div className="text-center py-12 bg-white rounded-lg border border-slate-200 text-slate-500 text-xs">
+          No questions found. Click "Add Question" to create the first item.
         </div>
       ) : (
         <div className="space-y-4">
           {questions.map((q) => (
             <div
               key={q.id}
-              className={`bg-white rounded-2xl p-6 border transition-all ${
-                q.isActive ? 'border-slate-200 shadow-sm' : 'border-slate-200/60 bg-slate-50/50 opacity-75'
+              className={`bg-white rounded-lg p-5 border transition ${
+                q.isActive ? 'border-slate-200' : 'border-slate-200/60 bg-slate-50/50 opacity-75'
               }`}
             >
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
-                <div className="flex items-center gap-3">
-                  <span className="px-2.5 py-1 bg-slate-900 text-white rounded-lg text-xs font-bold font-mono">
+                <div className="flex items-center gap-2">
+                  <span className="px-1.5 py-0.5 bg-slate-100 text-slate-800 rounded text-xs font-mono font-medium">
                     {q.code}
                   </span>
-                  <h2 className="font-bold text-slate-900 text-base">{q.title}</h2>
+                  <h2 className="font-semibold text-slate-900 text-sm">{q.title}</h2>
                   <span
-                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider border ${
+                    className={`text-[10px] font-medium px-1.5 py-0.5 rounded border ${
                       q.isActive
-                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                        : 'bg-slate-100 text-slate-500 border-slate-200'
+                        ? 'bg-slate-100 text-slate-700 border-slate-200'
+                        : 'bg-slate-50 text-slate-400 border-slate-200'
                     }`}
                   >
                     {q.isActive ? 'Active' : 'Inactive'}
                   </span>
-                  {q.isDemo && (
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider bg-amber-50 text-amber-700 border border-amber-200">
-                      Demo
-                    </span>
-                  )}
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
                   <button
                     onClick={() => openEditModal(q)}
-                    className="p-2 rounded-lg text-slate-500 hover:text-brand-600 hover:bg-slate-100 transition-colors"
-                    title="Edit Question"
+                    className="p-1.5 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"
+                    title="Edit question"
                   >
-                    <Edit2 className="w-4 h-4" />
+                    <Edit2 className="w-3.5 h-3.5" />
                   </button>
                   <button
                     onClick={() => handleDelete(q.id, q.code)}
-                    className="p-2 rounded-lg text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors"
-                    title="Delete Question"
+                    className="p-1.5 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition"
+                    title="Delete question"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
               </div>
 
               {/* Multi-field display */}
-              <div className="mt-4 space-y-4 text-xs">
+              <div className="mt-4 space-y-3 text-xs">
                 <div>
-                  <span className="font-bold uppercase tracking-wider text-slate-400 block mb-1">
-                    Factual Scenario (Student Viewable)
+                  <span className="font-medium text-slate-500 block mb-1">
+                    Problem Scenario (Student View)
                   </span>
-                  <p className="legal-text text-slate-700 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                  <p className="font-serif text-slate-800 bg-slate-50 p-3.5 rounded-md border border-slate-200/80 leading-relaxed">
                     {q.scenario}
                   </p>
                 </div>
 
                 <div>
-                  <span className="font-bold uppercase tracking-wider text-indigo-700 block mb-1">
-                    Model Reference Answer (Researcher & Expert View Only)
+                  <span className="font-medium text-slate-700 block mb-1">
+                    MODEL ANSWER
                   </span>
-                  <p className="legal-text text-slate-800 bg-indigo-50/50 p-4 rounded-xl border border-indigo-100">
-                    {q.modelAnswer}
+                  <p className="font-serif text-slate-800 bg-slate-50/60 p-3.5 rounded-md border border-slate-200/80 leading-relaxed whitespace-pre-line">
+                    {q.modelAnswer || 'No model answer configured.'}
                   </p>
-                </div>
-
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <span className="font-bold uppercase tracking-wider text-slate-500 block mb-1">
-                      Statutory Legal Elements Checklist
-                    </span>
-                    <ul className="list-disc pl-4 space-y-0.5 text-slate-600">
-                      {(q.statutoryElements || []).map((el, i) => (
-                        <li key={i}>{el}</li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  <div>
-                    <span className="font-bold uppercase tracking-wider text-slate-500 block mb-1">
-                      Statutory Provisions / Jurisprudence
-                    </span>
-                    <ul className="list-disc pl-4 space-y-0.5 text-slate-600">
-                      {(q.relevantProvisions || []).map((prov, i) => (
-                        <li key={i}>{prov}</li>
-                      ))}
-                    </ul>
-                  </div>
                 </div>
               </div>
             </div>
@@ -258,148 +229,107 @@ export const QuestionManager: React.FC = () => {
 
       {/* Question Edit / Create Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-6 space-y-4 my-8 border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full p-6 space-y-4 my-8 border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center gap-2">
-                <FileText className="w-5 h-5 text-brand-600" />
-                <h2 className="text-lg font-bold text-slate-900">
-                  {editingQuestion ? `Edit Question: ${editingQuestion.code}` : 'New Predetermined Question'}
+                <FileText className="w-4 h-4 text-slate-600" />
+                <h2 className="text-sm font-semibold text-slate-900">
+                  {editingQuestion ? `Edit Question: ${editingQuestion.code}` : 'New Question'}
                 </h2>
               </div>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100"
+                className="p-1 text-slate-400 hover:text-slate-700 rounded"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
             <form onSubmit={handleSave} className="space-y-4 text-xs">
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="font-bold uppercase tracking-wider text-slate-500 block mb-1">
-                    Question Code
+                  <label className="font-medium text-slate-700 block mb-1">
+                    Question code
                   </label>
                   <input
                     type="text"
                     required
                     value={code}
                     onChange={(e) => setCode(e.target.value)}
-                    placeholder="e.g. CRIM1-Q01"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-900 font-mono focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                    placeholder="e.g. COMM-Q01"
+                    className="w-full bg-white border border-slate-300 rounded-md p-2 text-slate-900 font-mono focus:ring-1 focus:ring-slate-400 focus:border-slate-400 outline-hidden"
                   />
                 </div>
 
                 <div className="col-span-2">
-                  <label className="font-bold uppercase tracking-wider text-slate-500 block mb-1">
-                    Question Title
+                  <label className="font-medium text-slate-700 block mb-1">
+                    Question title
                   </label>
                   <input
                     type="text"
                     required
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    placeholder="e.g. Justifying Circumstances: Self-Defense Analysis"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-900 focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                    placeholder="e.g. Commercial Law Analysis"
+                    className="w-full bg-white border border-slate-300 rounded-md p-2 text-slate-900 focus:ring-1 focus:ring-slate-400 focus:border-slate-400 outline-hidden"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="font-bold uppercase tracking-wider text-slate-500 block mb-1">
-                  Factual Scenario (Shown to Students)
+                <label className="font-medium text-slate-700 block mb-1">
+                  Problem Scenario (Shown to Students)
                 </label>
                 <textarea
                   required
                   rows={4}
                   value={scenario}
                   onChange={(e) => setScenario(e.target.value)}
-                  placeholder="Enter the factual problem and specific legal instruction..."
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-900 focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                  placeholder="Enter the factual problem scenario..."
+                  className="w-full bg-white border border-slate-300 rounded-md p-2.5 text-slate-900 focus:ring-1 focus:ring-slate-400 focus:border-slate-400 outline-hidden font-serif"
                 />
               </div>
 
               <div>
-                <label className="font-bold uppercase tracking-wider text-indigo-700 block mb-1">
-                  Model Reference Answer (Hidden from Students — Ground Truth for AI/Experts)
+                <label className="font-medium text-slate-700 block mb-1">
+                  MODEL ANSWER
                 </label>
                 <textarea
                   required
-                  rows={4}
+                  rows={5}
                   value={modelAnswer}
                   onChange={(e) => setModelAnswer(e.target.value)}
-                  placeholder="Enter the comprehensive reference answer applying RPC elements..."
-                  className="w-full bg-indigo-50/40 border border-indigo-200 rounded-xl p-2.5 text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                  placeholder="Enter the authoritative model answer..."
+                  className="w-full bg-white border border-slate-300 rounded-md p-2.5 text-slate-900 focus:ring-1 focus:ring-slate-400 focus:border-slate-400 outline-hidden font-serif"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="font-bold uppercase tracking-wider text-slate-500 block mb-1">
-                    Statutory Elements (One per line)
-                  </label>
-                  <textarea
-                    rows={3}
-                    value={elementsText}
-                    onChange={(e) => setElementsText(e.target.value)}
-                    placeholder="Unlawful aggression&#10;Reasonable necessity of means&#10;Lack of sufficient provocation"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-slate-900 focus:ring-2 focus:ring-brand-500 focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="font-bold uppercase tracking-wider text-slate-500 block mb-1">
-                    Provisions / Jurisprudence (One per line)
-                  </label>
-                  <textarea
-                    rows={3}
-                    value={provisionsText}
-                    onChange={(e) => setProvisionsText(e.target.value)}
-                    placeholder="Article 11, Par. 1, RPC&#10;People v. Boholst-Caballero"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-slate-900 focus:ring-2 focus:ring-brand-500 focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="font-bold uppercase tracking-wider text-slate-500 block mb-1">
-                  Acceptable Concept / Phrasing Variations (One per line)
-                </label>
-                <textarea
-                  rows={2}
-                  value={variationsText}
-                  onChange={(e) => setVariationsText(e.target.value)}
-                  placeholder="imminent peril&#10;rational equivalence of weapon"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-slate-900 focus:ring-2 focus:ring-brand-500 focus:outline-none"
-                />
-              </div>
-
-              <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+              <div className="flex items-center justify-between pt-3 border-t border-slate-100">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={isActive}
                     onChange={(e) => setIsActive(e.target.checked)}
-                    className="rounded text-brand-600 focus:ring-brand-500 w-4 h-4"
+                    className="rounded text-slate-900 focus:ring-slate-400 w-3.5 h-3.5"
                   />
-                  <span className="font-semibold text-slate-700">Active for Student Assessments</span>
+                  <span className="font-medium text-slate-700">Active for student assessments</span>
                 </label>
 
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={() => setIsModalOpen(false)}
-                    className="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 transition-colors"
+                    className="px-3 py-1.5 border border-slate-300 text-slate-700 rounded-md hover:bg-slate-50 transition"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={saving}
-                    className="px-5 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-xl font-semibold shadow-sm transition-colors disabled:opacity-50"
+                    className="px-4 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-md font-medium transition disabled:opacity-50"
                   >
-                    {saving ? 'Saving...' : 'Save Question Item'}
+                    {saving ? 'Saving...' : 'Save Question'}
                   </button>
                 </div>
               </div>

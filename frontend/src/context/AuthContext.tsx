@@ -18,7 +18,9 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(localStorage.getItem('yawa_token'));
+  const [token, setToken] = useState<string | null>(
+    localStorage.getItem('lexify_token') || localStorage.getItem('yawa_token')
+  );
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
@@ -32,6 +34,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(res.user);
       } catch (err) {
         console.warn('Session expired or invalid, logging out.');
+        localStorage.removeItem('lexify_token');
         localStorage.removeItem('yawa_token');
         setToken(null);
         setUser(null);
@@ -49,7 +52,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!res || !res.token || !res.user) {
         throw new Error('Authentication response did not contain a valid session token or user.');
       }
-      localStorage.setItem('yawa_token', res.token);
+      localStorage.setItem('lexify_token', res.token);
       setToken(res.token);
       setUser(res.user);
     } finally {
@@ -64,7 +67,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!res || !res.token || !res.user) {
         throw new Error('Quick login response did not contain a valid session token or user.');
       }
-      localStorage.setItem('yawa_token', res.token);
+      localStorage.setItem('lexify_token', res.token);
       setToken(res.token);
       setUser(res.user);
     } finally {
@@ -73,6 +76,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
+    localStorage.removeItem('lexify_token');
     localStorage.removeItem('yawa_token');
     setToken(null);
     setUser(null);

@@ -14,6 +14,7 @@ import finalEvaluationRoutes from './routes/final-evaluation.routes';
 import surveyRoutes from './routes/survey.routes';
 import statisticsRoutes from './routes/statistics.routes';
 import exportRoutes from './routes/export.routes';
+import modelConfigRoutes from './routes/model-config.routes';
 
 export const app = express();
 
@@ -25,7 +26,7 @@ app.use(express.json({ limit: '10mb' }));
 app.get('/api/health', (req: Request, res: Response) => {
   res.status(200).json({
     status: 'ok',
-    service: 'YAWA Research Backend API',
+    service: 'Lexify Research Backend API',
     timestamp: new Date().toISOString(),
   });
 });
@@ -35,6 +36,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/questions', questionRoutes);
 app.use('/api/rubrics', rubricRoutes);
 app.use('/api/agent-versions', agentVersionRoutes);
+app.use('/api/models', modelConfigRoutes);
 app.use('/api/audit-logs', auditRoutes);
 app.use('/api/sessions', assessmentSessionRoutes);
 app.use('/api/evaluations', evaluationRoutes);

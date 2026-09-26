@@ -1,215 +1,318 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../../api/client';
-import { HelpCircle, Award, Layers, History, Shield, ArrowRight, Activity } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
+import { AdminEvaluation } from '../../types';
+import { LoadingSkeleton } from '../../components/common/LoadingSkeleton';
+import { ErrorAlert } from '../../components/common/ErrorAlert';
+import {
+  HelpCircle,
+  ArrowRight,
+  Cpu,
+  Download,
+  Users,
+  Sliders,
+  CheckCircle,
+} from 'lucide-react';
 
 export const AdminDashboard: React.FC = () => {
-  const { user } = useAuth();
   const [stats, setStats] = useState({
     questionsCount: 0,
     rubricsCount: 0,
-    activeVersion: 'V1',
-    auditLogsCount: 0,
+    submissionsCount: 0,
+    modelsCount: 3,
   });
+  const [recentEvaluations, setRecentEvaluations] = useState<AdminEvaluation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    async function loadStats() {
+    async function loadDashboard() {
       try {
-        const [qRes, rRes, vRes, aRes] = await Promise.all([
+        setLoading(true);
+        setError(null);
+        const [qRes, rRes, mRes, evalRes] = await Promise.all([
           api.questions.list(true),
           api.rubrics.list(),
-          api.agentVersions.getActive(),
-          api.audit.list({ limit: 1 }),
+          api.models.list(),
+          api.evaluations.getAdminList({ limit: 10 }),
         ]);
 
+        const evals: AdminEvaluation[] = evalRes.data?.evaluations || [];
+        setRecentEvaluations(evals.slice(0, 5));
+
         setStats({
-          questionsCount: qRes.data.length,
-          rubricsCount: rRes.data.length,
-          activeVersion: vRes.data?.versionTag || 'V1',
-          auditLogsCount: aRes.data.total || 0,
+          questionsCount: qRes.data?.length || 0,
+          rubricsCount: rRes.data?.length || 0,
+          submissionsCount: evalRes.data?.total || evals.length,
+          modelsCount: mRes.data?.length || 3,
         });
-      } catch (err) {
-        console.error('Failed to load admin stats:', err);
+      } catch (err: any) {
+        console.error('Failed to load admin overview:', err);
+        setError(err.message || 'Failed to load system overview');
       } finally {
         setLoading(false);
       }
     }
-    loadStats();
+    loadDashboard();
   }, []);
 
   return (
-    <div className="space-y-6">
-      {/* Welcome Banner */}
-      <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="space-y-6 max-w-6xl mx-auto py-2">
+      {/* Workspace Header */}
+      <div className="bg-white border border-slate-200 rounded-lg p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-purple-100 text-purple-800 border border-purple-200">
-              Researcher Control Panel
-            </span>
-            <span className="text-xs text-slate-400">• Study Phase 1 Active</span>
+          <div className="text-xs text-slate-500 font-medium mb-1">
+            Commercial Law Assessment
           </div>
-          <h1 className="text-2xl font-bold text-slate-900">Research Management Console</h1>
-          <p className="text-sm text-slate-600 mt-0.5">
-            Logged in as <strong>{user?.name}</strong>. Configure research items, scoring rubrics, and Agent version snapshots.
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+            Overview
+          </h1>
+          <p className="text-xs text-slate-500 mt-1">
+            Operational status, student submissions, and assessment management.
           </p>
         </div>
-        <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-900 text-white rounded-xl text-xs font-semibold shadow-sm w-fit">
-          <Activity className="w-4 h-4 text-emerald-400" />
-          <span>Active Agent: {stats.activeVersion} Baseline</span>
+
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-md text-xs text-slate-700 self-start md:self-auto font-medium">
+          <span className="w-2 h-2 rounded-full bg-emerald-500" />
+          <span>System Online · 3 local models active</span>
         </div>
       </div>
 
-      {/* Metrics Row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-1">
-          <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-            Predetermined Questions
-          </span>
-          <div className="text-2xl font-black text-slate-900">
-            {loading ? '...' : stats.questionsCount}
+      {error && <ErrorAlert message={error} />}
+
+      {/* Operational Summary Row */}
+      {loading ? (
+        <LoadingSkeleton rows={4} type="card" />
+      ) : (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="bg-white border border-slate-200 rounded-lg p-4">
+            <span className="text-xs text-slate-500">Student submissions</span>
+            <div className="text-xl font-bold text-slate-900 mt-1">{stats.submissionsCount}</div>
+            <span className="text-[11px] text-slate-400 mt-0.5 block">Evaluated by 3 models</span>
           </div>
-          <p className="text-[11px] text-slate-500">Configurable Criminal Law I items</p>
+
+          <div className="bg-white border border-slate-200 rounded-lg p-4">
+            <span className="text-xs text-slate-500">Active assessment</span>
+            <div className="text-base font-bold text-slate-900 mt-1">Commercial Law</div>
+            <span className="text-[11px] text-slate-400 mt-0.5 block">{stats.questionsCount} active questions</span>
+          </div>
+
+          <div className="bg-white border border-slate-200 rounded-lg p-4">
+            <span className="text-xs text-slate-500">Configured models</span>
+            <div className="text-xl font-bold text-slate-900 mt-1">{stats.modelsCount}</div>
+            <span className="text-[11px] text-slate-400 mt-0.5 block">Llama 3.2, Phi-4, Gemma 2</span>
+          </div>
+
+          <div className="bg-white border border-slate-200 rounded-lg p-4">
+            <span className="text-xs text-slate-500">Controlling rubric</span>
+            <div className="text-xl font-bold text-slate-900 mt-1">100%</div>
+            <span className="text-[11px] text-slate-400 mt-0.5 block">15/15/30/30/10 matrix</span>
+          </div>
+        </div>
+      )}
+
+      {/* Recent Submissions Table */}
+      <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
+        <div className="px-6 py-4 border-b border-slate-200 bg-slate-50/50 flex items-center justify-between">
+          <h2 className="text-xs font-semibold text-slate-900 uppercase tracking-wider">
+            Recent Submissions
+          </h2>
+          <Link
+            to="/admin/submissions"
+            className="text-xs text-slate-600 hover:text-slate-900 font-medium inline-flex items-center gap-1"
+          >
+            <span>View all submissions</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-1">
-          <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-            Scoring Rubrics
-          </span>
-          <div className="text-2xl font-black text-slate-900">
-            {loading ? '...' : stats.rubricsCount}
+        {loading ? (
+          <div className="p-8 text-center text-slate-400 text-xs">
+            Loading recent submissions...
           </div>
-          <p className="text-[11px] text-slate-500">Criteria with 100% weight sum</p>
-        </div>
+        ) : recentEvaluations.length === 0 ? (
+          <div className="p-8 text-center text-slate-500 text-xs">
+            No submissions recorded yet.
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-medium">
+                <tr>
+                  <th className="py-3 px-6">Student</th>
+                  <th className="py-3 px-4">Question</th>
+                  <th className="py-3 px-4">Model</th>
+                  <th className="py-3 px-4">Submitted</th>
+                  <th className="py-3 px-4">Score</th>
+                  <th className="py-3 px-4">Status</th>
+                  <th className="py-3 px-6 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {recentEvaluations.map((e) => {
+                  const scoreVal = (e.finalScore ?? e.numericalScore * 0.05).toFixed(2);
+                  const dateStr = new Date(e.createdAt).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  });
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-1">
-          <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-            Active Agent Version
-          </span>
-          <div className="text-2xl font-black text-purple-600">
-            {loading ? '...' : stats.activeVersion}
-          </div>
-          <p className="text-[11px] text-slate-500">Immutable snapshot</p>
-        </div>
+                  const modelName =
+                    e.exactModelId === 'gemma2:2b' || e.modelSlot === 'MODEL_C'
+                      ? 'Gemma 2 2B'
+                      : e.exactModelId === 'phi4-mini:3.8b' || e.modelSlot === 'MODEL_B'
+                      ? 'Phi-4-mini 3.8B'
+                      : 'Llama 3.2 3B';
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-1">
-          <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-            Audit Trail Records
-          </span>
-          <div className="text-2xl font-black text-slate-900">
-            {loading ? '...' : stats.auditLogsCount}
+                  const modelTag = e.exactModelId || (e.modelSlot === 'MODEL_C' ? 'gemma2:2b' : e.modelSlot === 'MODEL_B' ? 'phi4-mini:3.8b' : 'llama3.2:3b');
+                  const slotTag = e.modelSlot || (e.exactModelId === 'gemma2:2b' ? 'MODEL_C' : e.exactModelId === 'phi4-mini:3.8b' ? 'MODEL_B' : 'MODEL_A');
+
+                  return (
+                    <tr key={e.id} className="hover:bg-slate-50/50 transition">
+                      <td className="py-3 px-6 font-medium text-slate-900">
+                        <div>
+                          <span>{e.studentName || 'Student'}</span>
+                          <span className="text-[10px] text-slate-400 font-mono block">
+                            {e.studentEmail}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 text-slate-600">
+                        <span className="px-1.5 py-0.5 rounded bg-slate-100 font-mono text-[10px]">
+                          {e.questionSnapshot?.code || 'COMM-Q01'}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div>
+                          <span className="font-medium text-slate-800 text-[11px] block">{modelName}</span>
+                          <span className="font-mono text-[10px] text-slate-400">{modelTag}</span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 text-slate-500">{dateStr}</td>
+                      <td className="py-3 px-4 font-mono font-semibold text-slate-900">
+                        {scoreVal} / 5.00
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-800 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">
+                          <CheckCircle className="w-3 h-3 text-emerald-600" />
+                          Evaluated
+                        </span>
+                      </td>
+                      <td className="py-3 px-6 text-right">
+                        <Link
+                          to={`/admin/submissions?evalId=${e.id}&sessionId=${e.sessionId}&questionId=${e.questionId}&slot=${slotTag}`}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-medium rounded text-xs transition shadow-2xs"
+                        >
+                          <span>Inspect</span>
+                          <ArrowRight className="w-3 h-3" />
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
-          <p className="text-[11px] text-slate-500">Append-only log entries</p>
-        </div>
+        )}
       </div>
 
-      {/* Module Navigation Cards */}
-      <div className="grid md:grid-cols-2 gap-6">
+      {/* Administrative Management Tools Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+        <Link
+          to="/admin/submissions"
+          className="bg-white border border-slate-200 rounded-lg p-5 hover:border-slate-300 hover:bg-slate-50/50 transition flex flex-col justify-between"
+        >
+          <div>
+            <div className="flex items-center gap-2 text-xs font-semibold text-slate-900 mb-1">
+              <Users className="w-4 h-4 text-slate-500" />
+              <span>Submissions & Multi-Model Review</span>
+            </div>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Compare student responses side-by-side with independent evaluations from Llama 3.2, Phi-4, and Gemma 2.
+            </p>
+          </div>
+          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-medium text-slate-700">
+            <span>View Submissions</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </div>
+        </Link>
+
         <Link
           to="/admin/questions"
-          className="group bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-brand-300 transition-all flex flex-col justify-between"
+          className="bg-white border border-slate-200 rounded-lg p-5 hover:border-slate-300 hover:bg-slate-50/50 transition flex flex-col justify-between"
         >
-          <div className="space-y-3">
-            <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center text-brand-600 group-hover:scale-105 transition-transform">
-              <HelpCircle className="w-6 h-6" />
+          <div>
+            <div className="flex items-center gap-2 text-xs font-semibold text-slate-900 mb-1">
+              <HelpCircle className="w-4 h-4 text-slate-500" />
+              <span>Questions & Model Answers</span>
             </div>
-            <div>
-              <h2 className="text-lg font-bold text-slate-900 group-hover:text-brand-600 transition-colors">
-                Question & Reference Management
-              </h2>
-              <p className="text-xs text-slate-600 mt-1 leading-relaxed">
-                Author and manage predetermined Criminal Law I questions, scenarios, model reference answers, statutory elements, provisions, and concept variations.
-              </p>
-            </div>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Manage Commercial Law analytical problem scenarios and corresponding authoritative model answers.
+            </p>
           </div>
-          <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-brand-600">
-            <span>Manage Question Inventory</span>
-            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-medium text-slate-700">
+            <span>Manage Questions</span>
+            <ArrowRight className="w-3.5 h-3.5" />
           </div>
         </Link>
 
         <Link
           to="/admin/rubrics"
-          className="group bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-brand-300 transition-all flex flex-col justify-between"
+          className="bg-white border border-slate-200 rounded-lg p-5 hover:border-slate-300 hover:bg-slate-50/50 transition flex flex-col justify-between"
         >
-          <div className="space-y-3">
-            <div className="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600 group-hover:scale-105 transition-transform">
-              <Award className="w-6 h-6" />
+          <div>
+            <div className="flex items-center gap-2 text-xs font-semibold text-slate-900 mb-1">
+              <Sliders className="w-4 h-4 text-slate-500" />
+              <span>Authoritative Rubric</span>
             </div>
-            <div>
-              <h2 className="text-lg font-bold text-slate-900 group-hover:text-emerald-600 transition-colors">
-                Configurable Rubric Builder
-              </h2>
-              <p className="text-xs text-slate-600 mt-1 leading-relaxed">
-                Design evaluation rubrics with customized legal criteria (e.g. Accuracy, Legal Elements, IRAC Reasoning, Application, Terminology) and real-time 100% weight validation.
-              </p>
-            </div>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Review the controlling 5-criterion rubric (Form 15, Answer 15, Rule 30, Application 30, Conclusion 10).
+            </p>
           </div>
-          <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-emerald-600">
-            <span>Configure Scoring Criteria</span>
-            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-medium text-slate-700">
+            <span>View Rubric</span>
+            <ArrowRight className="w-3.5 h-3.5" />
           </div>
         </Link>
 
         <Link
-          to="/admin/agent-versions"
-          className="group bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-brand-300 transition-all flex flex-col justify-between"
+          to="/admin/models"
+          className="bg-white border border-slate-200 rounded-lg p-5 hover:border-slate-300 hover:bg-slate-50/50 transition flex flex-col justify-between"
         >
-          <div className="space-y-3">
-            <div className="w-12 h-12 rounded-xl bg-purple-50 border border-purple-200 flex items-center justify-center text-purple-600 group-hover:scale-105 transition-transform">
-              <Layers className="w-6 h-6" />
+          <div>
+            <div className="flex items-center gap-2 text-xs font-semibold text-slate-900 mb-1">
+              <Cpu className="w-4 h-4 text-slate-500" />
+              <span>Model Configuration</span>
             </div>
-            <div>
-              <h2 className="text-lg font-bold text-slate-900 group-hover:text-purple-600 transition-colors">
-                Agent Component Snapshot Console
-              </h2>
-              <p className="text-xs text-slate-600 mt-1 leading-relaxed">
-                Configure AI Agent instructions, skills, evaluation patterns, and model settings (Google, OpenAI, Anthropic, Custom). Lock immutable version snapshots (V1, V2, V3) and inspect diffs.
-              </p>
-            </div>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Check live serving status and execution parameters for local Ollama evaluation models.
+            </p>
           </div>
-          <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-purple-600">
-            <span>Inspect Agent Snapshots & Diffs</span>
-            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-medium text-slate-700">
+            <span>Configure Models</span>
+            <ArrowRight className="w-3.5 h-3.5" />
           </div>
         </Link>
 
         <Link
-          to="/admin/audit-logs"
-          className="group bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-brand-300 transition-all flex flex-col justify-between"
+          to="/admin/exports"
+          className="bg-white border border-slate-200 rounded-lg p-5 hover:border-slate-300 hover:bg-slate-50/50 transition flex flex-col justify-between"
         >
-          <div className="space-y-3">
-            <div className="w-12 h-12 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-700 group-hover:scale-105 transition-transform">
-              <History className="w-6 h-6" />
+          <div>
+            <div className="flex items-center gap-2 text-xs font-semibold text-slate-900 mb-1">
+              <Download className="w-4 h-4 text-slate-500" />
+              <span>Exports & Reports</span>
             </div>
-            <div>
-              <h2 className="text-lg font-bold text-slate-900 group-hover:text-slate-700 transition-colors">
-                Append-Only Audit Trail
-              </h2>
-              <p className="text-xs text-slate-600 mt-1 leading-relaxed">
-                Review immutable research log entries documenting all logins, question revisions, rubric adjustments, and Agent snapshot events for empirical reproducibility.
-              </p>
-            </div>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Export system assessment records, evaluation datasets in CSV/JSON, and printable summary reports.
+            </p>
           </div>
-          <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-slate-700">
-            <span>View Historical Audit Records</span>
-            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-medium text-slate-700">
+            <span>Export Data</span>
+            <ArrowRight className="w-3.5 h-3.5" />
           </div>
         </Link>
-      </div>
-
-      {/* Research Methodology Reminder */}
-      <div className="bg-slate-900 text-white rounded-2xl p-6 border border-slate-800 shadow-md flex items-start gap-4">
-        <div className="p-3 bg-slate-800 rounded-xl border border-slate-700 shrink-0">
-          <Shield className="w-6 h-6 text-purple-400" />
-        </div>
-        <div>
-          <h3 className="text-sm font-bold text-white">Three-Cycle Iterative Refinement Architecture</h3>
-          <p className="text-xs text-slate-300 mt-1 leading-relaxed">
-            The study follows a strict progression: <strong>AI Version 1</strong> → Double-Blind Expert Evaluation → Comparison & Gap Documentation → Refinement → <strong>AI Version 2</strong> → Repeat → <strong>AI Version 3</strong> → Post-V3 Final Evaluation & Usability Surveys. All versions and evaluation records remain permanently immutable.
-          </p>
-        </div>
       </div>
     </div>
   );

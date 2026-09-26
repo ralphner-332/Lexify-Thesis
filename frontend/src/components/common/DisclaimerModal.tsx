@@ -1,54 +1,57 @@
 import React from 'react';
-import { ShieldAlert, CheckCircle } from 'lucide-react';
+import { Shield, ArrowRight } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 export const DisclaimerModal: React.FC = () => {
   const { user, acceptDisclaimer } = useAuth();
 
-  if (!user || user.disclaimerAcceptedAt) {
+  // Do not show for admins, or if already accepted
+  if (!user || user.role === 'ADMIN' || user.disclaimerAcceptedAt) {
     return null;
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-200 animate-in fade-in zoom-in-95 duration-200">
-        <div className="bg-amber-500 p-6 text-amber-950 flex items-center gap-3">
-          <ShieldAlert className="w-8 h-8 shrink-0 text-amber-950" />
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4">
+      <div className="bg-white rounded-lg shadow-xl max-w-lg w-full overflow-hidden border border-slate-200 animate-in fade-in zoom-in-95 duration-200">
+        <div className="p-6 border-b border-slate-100 flex items-center gap-3">
+          <div className="w-9 h-9 rounded-md bg-slate-100 flex items-center justify-center text-slate-700">
+            <Shield className="w-5 h-5" />
+          </div>
           <div>
-            <h2 className="text-xl font-bold">Research Prototype Notice</h2>
-            <p className="text-xs text-amber-900 mt-0.5">
-              Father Saturnino Urios University (FSUU) College of Law
+            <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wide">
+              Security & Data Privacy Notice
+            </h2>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Lexify Legal Assessment System
             </p>
           </div>
         </div>
 
-        <div className="p-6 space-y-4 text-slate-700 text-sm leading-relaxed">
+        <div className="p-6 space-y-3 text-slate-700 text-xs leading-relaxed">
           <p>
-            Welcome to <strong>YAWA (Yet Another Written-Answer AI Agent)</strong>. This platform is a locally deployed empirical research prototype designed to study the iterative refinement of AI evaluation in Philippine Criminal Law I.
+            Lexify processes information submitted through this system for assessment and authorized academic purposes.
           </p>
 
-          <div className="bg-amber-50 rounded-xl p-4 border border-amber-200 text-amber-900 text-xs space-y-2">
-            <p className="font-semibold text-amber-950">Important Conditions of Use:</p>
-            <ul className="list-disc pl-4 space-y-1">
-              <li>This software is <strong>NOT</strong> an official institutional grading system.</li>
-              <li>Scores and reasoning are for academic research analysis only.</li>
-              <li>This prototype does not provide formal legal advice or replace law faculty evaluation.</li>
-              <li>All evaluation sessions and adjustments are recorded for academic verification.</li>
-            </ul>
-          </div>
+          <p>
+            Users should submit only information required by the assessment.
+          </p>
 
-          <p className="text-xs text-slate-500">
-            By proceeding, you acknowledge that you understand the prototype status of this system and consent to participating in this academic study.
+          <p>
+            Account information, submitted answers, assessment results, and related system records may be stored securely for authorized academic use.
+          </p>
+
+          <p className="text-slate-500 pt-1 border-t border-slate-100 text-[11px]">
+            By continuing, the user acknowledges the collection and processing of the information required to operate the assessment system.
           </p>
         </div>
 
-        <div className="p-6 bg-slate-50 border-t border-slate-100 flex justify-end">
+        <div className="p-4 bg-slate-50/80 border-t border-slate-100 flex justify-end">
           <button
             onClick={() => acceptDisclaimer()}
-            className="flex items-center gap-2 px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-medium text-sm transition-colors shadow-md hover:shadow-lg"
+            className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-md text-xs font-medium transition"
           >
-            <CheckCircle className="w-4 h-4 text-emerald-400" />
-            I Understand and Agree
+            <span>Continue</span>
+            <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>

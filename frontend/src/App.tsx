@@ -2,36 +2,22 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ProtectedLayout } from './components/common/ProtectedLayout';
-import { DisclaimerBanner } from './components/layout/DisclaimerBanner';
 import { DisclaimerModal } from './components/common/DisclaimerModal';
 import { LoginPage } from './pages/LoginPage';
+import { RegisterPage } from './pages/RegisterPage';
 
 // Student Pages
 import { StudentDashboard } from './pages/student/StudentDashboard';
 import { AssessmentWizard } from './pages/student/AssessmentWizard';
 import { ReviewAnswersPage } from './pages/student/ReviewAnswersPage';
 import { FeedbackViewer } from './pages/student/FeedbackViewer';
-import { StudentUsabilitySurvey } from './pages/student/StudentUsabilitySurvey';
-
-// Expert Pages
-import { ExpertDashboard } from './pages/expert/ExpertDashboard';
-import { ExpertGradingWorkspace } from './pages/expert/ExpertGradingWorkspace';
-import { PostV3FinalReviewPortal } from './pages/expert/PostV3FinalReviewPortal';
-import { PostV3ReviewWorkspace } from './pages/expert/PostV3ReviewWorkspace';
-import { ExpertCapabilitySurvey } from './pages/expert/ExpertCapabilitySurvey';
 
 // Admin Pages
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { QuestionManager } from './pages/admin/QuestionManager';
 import { RubricBuilder } from './pages/admin/RubricBuilder';
-import { AgentVersionConsole } from './pages/admin/AgentVersionConsole';
-import { AuditLogViewer } from './pages/admin/AuditLogViewer';
-import { AdminEvaluationExplorer } from './pages/admin/AdminEvaluationExplorer';
-import { ComparisonMatrixDashboard } from './pages/admin/ComparisonMatrixDashboard';
-import { RefinementManager } from './pages/admin/RefinementManager';
-import { VersionLineageConsole } from './pages/admin/VersionLineageConsole';
-import { ResearchAnalyticsDashboard } from './pages/admin/ResearchAnalyticsDashboard';
-import { SurveyManager } from './pages/admin/SurveyManager';
+import { ModelConfigConsole } from './pages/admin/ModelConfigConsole';
+import { MultiModelSubmissionsExplorer } from './pages/admin/MultiModelSubmissionsExplorer';
 import { ResearchExportReportPortal } from './pages/admin/ResearchExportReportPortal';
 
 // Root Route Decider
@@ -41,18 +27,14 @@ const RootRedirect: React.FC = () => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-slate-50">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900"></div>
       </div>
     );
   }
 
   if (!user) return <Navigate to="/login" replace />;
-
-  if (user.role === 'STUDENT') return <Navigate to="/student" replace />;
-  if (user.role === 'EXPERT') return <Navigate to="/expert" replace />;
   if (user.role === 'ADMIN') return <Navigate to="/admin" replace />;
-
-  return <Navigate to="/login" replace />;
+  return <Navigate to="/student" replace />;
 };
 
 export const App: React.FC = () => {
@@ -60,10 +42,7 @@ export const App: React.FC = () => {
     <AuthProvider>
       <BrowserRouter>
         <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 font-sans antialiased">
-          {/* Institutional & Academic Research Disclaimer Banner */}
-          <DisclaimerBanner />
-
-          {/* Mandatory Research Consent Modal */}
+          {/* Security & Data Privacy Notice Modal */}
           <DisclaimerModal />
 
           {/* Main Routing Architecture */}
@@ -71,40 +50,27 @@ export const App: React.FC = () => {
             <Routes>
               {/* Public Routes */}
               <Route path="/login" element={<LoginPage />} />
+              <Route path="/register" element={<RegisterPage />} />
               <Route path="/" element={<RootRedirect />} />
 
-              {/* Student Portal (Role: STUDENT) */}
-              <Route element={<ProtectedLayout allowedRoles={['STUDENT']} />}>
+              {/* Student Portal (Role: STUDENT, ADMIN) */}
+              <Route element={<ProtectedLayout allowedRoles={['STUDENT', 'ADMIN']} />}>
                 <Route path="/student" element={<StudentDashboard />} />
                 <Route path="/student/assessment" element={<AssessmentWizard />} />
                 <Route path="/student/assessment/review" element={<ReviewAnswersPage />} />
                 <Route path="/student/assessment/feedback" element={<FeedbackViewer />} />
-                <Route path="/student/survey" element={<StudentUsabilitySurvey />} />
               </Route>
 
-              {/* Expert Double-Blind Evaluator & Post-V3 Portal (Role: EXPERT, ADMIN) */}
-              <Route element={<ProtectedLayout allowedRoles={['EXPERT', 'ADMIN']} />}>
-                <Route path="/expert" element={<ExpertDashboard />} />
-                <Route path="/expert/evaluate/:sessionId/:questionId" element={<ExpertGradingWorkspace />} />
-                <Route path="/expert/post-v3-reviews" element={<PostV3FinalReviewPortal />} />
-                <Route path="/expert/post-v3-reviews/:evaluationId" element={<PostV3ReviewWorkspace />} />
-                <Route path="/expert/survey" element={<ExpertCapabilitySurvey />} />
-              </Route>
-
-              {/* Researcher Admin Consoles (Role: ADMIN) */}
+              {/* Administrator Consoles (Role: ADMIN) */}
               <Route element={<ProtectedLayout allowedRoles={['ADMIN']} />}>
                 <Route path="/admin" element={<AdminDashboard />} />
+                <Route path="/admin/submissions" element={<MultiModelSubmissionsExplorer />} />
+                <Route path="/admin/comparisons" element={<MultiModelSubmissionsExplorer />} />
+                <Route path="/admin/evaluations/:evaluationId" element={<MultiModelSubmissionsExplorer />} />
                 <Route path="/admin/questions" element={<QuestionManager />} />
                 <Route path="/admin/rubrics" element={<RubricBuilder />} />
-                <Route path="/admin/agent-versions" element={<AgentVersionConsole />} />
-                <Route path="/admin/evaluations" element={<AdminEvaluationExplorer />} />
-                <Route path="/admin/comparisons" element={<ComparisonMatrixDashboard />} />
-                <Route path="/admin/refinements" element={<RefinementManager />} />
-                <Route path="/admin/version-lineage" element={<VersionLineageConsole />} />
-                <Route path="/admin/analytics" element={<ResearchAnalyticsDashboard />} />
-                <Route path="/admin/surveys" element={<SurveyManager />} />
+                <Route path="/admin/models" element={<ModelConfigConsole />} />
                 <Route path="/admin/exports" element={<ResearchExportReportPortal />} />
-                <Route path="/admin/audit-logs" element={<AuditLogViewer />} />
               </Route>
 
               {/* Catch-all */}

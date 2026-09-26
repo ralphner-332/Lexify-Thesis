@@ -27,7 +27,7 @@ const API_BASE = '/api';
 
 class ApiClient {
   private getToken(): string | null {
-    return localStorage.getItem('yawa_token');
+    return localStorage.getItem('lexify_token') || localStorage.getItem('yawa_token');
   }
 
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
@@ -57,6 +57,14 @@ class ApiClient {
 
   // --- Auth APIs ---
   auth = {
+    register: async (data: { name: string; email: string; password: string; confirmPassword?: string }) => {
+      const res = await this.request<{ success: boolean; message: string; user: User }>('/auth/register', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+      return res;
+    },
+
     login: async (credentials: { email: string; password?: string }) => {
       const res = await this.request<{ success: boolean; token: string; user: User }>('/auth/login', {
         method: 'POST',
@@ -317,6 +325,8 @@ class ApiClient {
       questionId?: string;
       isDemo?: boolean;
       hasReviewFlags?: boolean;
+      limit?: number;
+      offset?: number;
     }) => {
       const query = new URLSearchParams();
       if (filter?.agentVersionId) query.append('agentVersionId', filter.agentVersionId);
@@ -324,6 +334,8 @@ class ApiClient {
       if (filter?.questionId) query.append('questionId', filter.questionId);
       if (filter?.isDemo !== undefined) query.append('isDemo', String(filter.isDemo));
       if (filter?.hasReviewFlags) query.append('hasReviewFlags', 'true');
+      if (filter?.limit) query.append('limit', String(filter.limit));
+      if (filter?.offset) query.append('offset', String(filter.offset));
       return this.request<{ success: boolean; data: { total: number; evaluations: AdminEvaluation[] } }>(
         `/evaluations?${query.toString()}`
       );
@@ -550,8 +562,36 @@ class ApiClient {
     },
   };
 
-  // --- Phase 4: Descriptive Statistics APIs ---
+  // --- Multi-Model Configuration APIs (Model A, B, C) ---
+  models = {
+    list: async () => {
+      return this.request<{ success: boolean; data: any[] }>('/models');
+    },
+    getBySlot: async (slot: string) => {
+      return this.request<{ success: boolean; data: any }>(`/models/${slot}`);
+    },
+    update: async (slot: string, data: any) => {
+      return this.request<{ success: boolean; message: string; data: any }>(`/models/${slot}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      });
+    },
+    setLock: async (isLocked: boolean) => {
+      return this.request<{ success: boolean; message: string; data: any[] }>('/models/lock', {
+        method: 'POST',
+        body: JSON.stringify({ isLocked }),
+      });
+    },
+  };
+
+  // --- Descriptive & Comparative Statistics APIs ---
   statistics = {
+    getMultiModel: async (isDemo?: boolean) => {
+      const query = new URLSearchParams();
+      if (isDemo !== undefined) query.append('isDemo', String(isDemo));
+      return this.request<{ success: boolean; data: any }>(`/statistics/multi-model?${query.toString()}`);
+    },
+
     getProgression: async (options?: { isDemo?: boolean; thresholdPercent?: number }) => {
       const query = new URLSearchParams();
       if (options?.isDemo !== undefined) query.append('isDemo', String(options.isDemo));

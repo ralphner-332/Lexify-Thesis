@@ -4,7 +4,7 @@ import { EvaluationService } from './services/evaluation.service';
 import { prisma } from './lib/prisma';
 
 async function runAttemptPolicyTests() {
-  console.log('🧪 Starting YAWA Research-Safe Assessment Attempt Policy Verification Suite...\n');
+  console.log('🧪 Starting Lexify Research-Safe Assessment Attempt Policy Verification Suite...\n');
 
   // Step 0: Auth Demo Student
   const demoAuth = await AuthService.quickLogin('STUDENT');

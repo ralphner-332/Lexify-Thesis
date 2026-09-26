@@ -199,7 +199,7 @@ async function verifyPhase3Behavior() {
         linkedRefinementIds: [refinementLog.gapId],
       },
     },
-    { id: adminId, email: 'admin@yawa.local' }
+    { id: adminId, email: 'admin@lexify.local' }
   );
 
   console.assert(v2Draft.versionTag === 'V2', 'Must create V2');

@@ -101,7 +101,7 @@ export class AssessmentSessionService {
     });
 
     if (activeQuestions.length === 0) {
-      throw new Error('No active Criminal Law I questions available for assessment.');
+      throw new Error('No active Commercial Law questions available for assessment.');
     }
 
     const fullQuestionsSnapshot = activeQuestions.map((q) => ({

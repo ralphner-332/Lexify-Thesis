@@ -10,6 +10,14 @@ export interface ResearchExportBundleDTO {
   datasets: {
     submissions: any[];
     aiEvaluations: any[];
+    allAiEvaluations: any[];
+    llama31Evaluations: any[];
+    mistral7bEvaluations: any[];
+    gemma2Evaluations: any[];
+    comparativeMatrix: any[];
+    lexicalSemanticAnalysis: any[];
+    modelConfigs: any[];
+    scoringRubrics: any[];
     expertEvaluations: any[];
     comparisons: any[];
     refinementLogs: any[];
@@ -18,6 +26,7 @@ export interface ResearchExportBundleDTO {
     studentSurveys: any[];
     expertSurveys: any[];
     dataDictionary: any[];
+    [key: string]: any;
   };
 }
 
@@ -61,5 +70,5 @@ export interface AcademicReportDTO {
     expertCapability: any;
   };
   methodologyAndLimitations: string[];
-  dataDictionary: Array<{ field: string; type: string; description: string }>;
+  dataDictionary: Array<{ dataset?: string; variable?: string; field?: string; type: string; description: string }>;
 }

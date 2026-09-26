@@ -1,7 +1,7 @@
 <!-- GSD:project-start source:PROJECT.md -->
 ## Project
 
-### YAWA — Yet Another Written-Answer AI Agent
+### Lexify — AI-Assisted Legal Essay Assessment & Research Platform
 
 A locally-deployed academic research prototype supporting an empirical study on developing and iteratively refining an AI Agent that evaluates written essay answers from FSUU College of Law students in Criminal Law I. The system compares structured AI evaluations against independent double-blind expert legal assessments across three iterative agent versions (V1 → V2 → V3), conducting gap analysis using a structured refinement framework, followed by post-V3 final expert evaluation, student usability testing, and comprehensive research data export.
 
