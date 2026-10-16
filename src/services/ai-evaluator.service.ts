@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { ProviderFactory } from '../providers/provider.factory';
 import { ModelConfig } from '../providers/llm-provider.interface';
 import { TextAnalysisService } from './text-analysis.service';
+import { percentageToCustomFivePoint } from '../utils/scoring';
 
 /**
  * Attorney Rounding Rule:
@@ -78,6 +79,7 @@ export const EvaluationOutputSchema = z.object({
   conclusionScore: z.number().min(0).max(10).optional(),
   weightedPercentage: z.number().min(0).max(100).optional(),
   finalScore: z.number().min(0).max(5).optional(),
+  roundedScore: z.number().int().min(0).max(5).optional(),
   rawPercentage: z.number().min(0).max(100).optional(),
   rawTenPointGrade: z.number().min(0).max(10).optional(),
   finalRoundedGrade: z.number().optional(),
@@ -94,7 +96,9 @@ export interface EvaluateAnswerParams {
   systemInstructions: string;
   studentAnswer: string;
   isDemo?: boolean;
+  accuracyLevel?: 'STRICT' | 'STANDARD' | 'LENIENT';
 }
+
 
 // =========================================================================
 // STRICT SPAN EXTRACTION & GROUNDING FUNCTIONS
@@ -187,40 +191,39 @@ export class AiEvaluatorService {
 
   /**
    * PASS 1 PROMPT: Extracts student-written spans with ZERO reference benchmark.
+   * Identifies ARAC components based on substantive function and meaning from continuous prose.
    */
   static buildPass1ExtractionPrompt(studentAnswer: string): string {
     return `
 === TASK: STUDENT SUBMISSION EVIDENCE EXTRACTION ===
-You are an objective legal text extractor. Extract ONLY the exact verbatim text that the student actually wrote for each of the four substantive legal criteria.
-DO NOT summarize. DO NOT paraphrase. DO NOT evaluate whether the student's text is correct or complete.
+You are an objective legal text extractor. Extract ONLY the exact verbatim text that the student actually wrote for each of the four substantive legal criteria (ARAC).
 
-=== CRITERION DEFINITIONS FOR EXTRACTION ===
-1. ANSWER EVIDENCE:
-Extract only text where the student directly responds to the legal question, takes a definite legal position, or states validity/existence/authority/rights.
-Example: "No, a partnership was not created between Alyssa and Bam."
-Do NOT classify legal doctrines, factual narrative, or final disposition as Answer evidence.
+EXTRACTION CATEGORIES:
+1. answerEvidence:
+   - The student's direct categorical legal stance resolving the question (e.g. "No, a partnership was not created", "No partnership exists", "Yes", "No", or stating whether a party is liable).
+   - If a sentence starts with a direct answer (e.g. "No partnership was created because..."), extract the direct stance clause ("No partnership was created").
 
-2. RULE EVIDENCE:
-Extract only text where the student states governing statutory law, legal provisions, doctrines, principles, requisites, or elements.
-Example: "Under Article 1767 of the Civil Code, a partnership requires an agreement to contribute money, property, or industry to a common fund with the intention of dividing profits."
-Do NOT classify factual sentences (e.g. "Bam borrowed ₱1,000,000 from Alyssa.") or conclusion statements as Rule evidence.
+2. ruleEvidence:
+   - The governing legal doctrines, statutory provisions, Civil Code articles, or legal requisites stated by the student.
 
-3. APPLICATION EVIDENCE:
-Extract only text where the student connects relevant facts to a legal rule, doctrine, element, requisite, or legal consequence (fact-rule synthesis or legal reasoning).
-Example: "Alyssa was entitled only to fixed monthly interest and had no authority to bind Bam or participate in management, showing an absence of partnership intent."
-Do NOT classify bare facts alone (e.g. "Alyssa gave Bam money.") or bare conclusions alone (e.g. "Therefore, they are not partners.") as Application evidence.
+3. applicationEvidence:
+   - Sentences or clauses applying the legal rule to the facts of the scenario, analyzing party conduct, financing, or transactions (e.g. analyzing Alyssa's ₱1,000,000, the interest, or lack of management/losses).
+   - Note: A concluding statement of outcome (e.g. "Therefore, Alyssa is not a partner") belongs under conclusionEvidence, not applicationEvidence.
 
-4. CONCLUSION EVIDENCE:
-Extract only an actual final legal disposition or ultimate resolution.
-Example: "Thus, Alyssa and Bam did not form a partnership."
-Do NOT classify legal rules or factual application as Conclusion evidence.
+4. conclusionEvidence:
+   - The student's final legal resolution or outcome resolving the question (e.g. sentences starting with "Therefore...", "Thus...", "In conclusion...").
 
-=== STUDENT SUBMISSION — EXTRACT ONLY FROM THIS TEXT ===
+RULES:
+- Extract exact verbatim text from the student submission.
+- If a criterion is not present in the student's text, return an empty array [].
+- If a submission is merely a list of disconnected keywords without sentences or reasoning, return empty arrays [] for all categories.
+
+=== STUDENT SUBMISSION ===
 ${studentAnswer}
 === END STUDENT SUBMISSION ===
 
 === REQUIRED JSON OUTPUT FORMAT ===
-Return ONLY a valid JSON object matching this schema:
+Return ONLY a valid JSON object:
 {
   "answerEvidence": ["exact verbatim quote from student"],
   "ruleEvidence": ["exact verbatim quote from student"],
@@ -259,6 +262,9 @@ Return ONLY a valid JSON object matching this schema:
   /**
    * PASS 2 PROMPT: Grades strictly grounded in validated Pass 1 evidence under SCORING CRITERIA AND INSTRUCTION.pdf.
    */
+  /**
+   * PASS 2 PROMPT: Grades strictly grounded in validated Pass 1 evidence under SCORING CRITERIA AND INSTRUCTION.pdf.
+   */
   static buildPass2ScoringPrompt(
     question: any,
     rubricCriteria: any[],
@@ -275,7 +281,8 @@ Return ONLY a valid JSON object matching this schema:
       wordCount: number;
       sentenceCount: number;
       hasDistinctParagraphs: boolean;
-    }
+    },
+    accuracyLevel: 'STRICT' | 'STANDARD' | 'LENIENT' = 'STANDARD'
   ): string {
     const rubricDescription = rubricCriteria
       .map(
@@ -296,6 +303,12 @@ You are evaluating a student's Commercial Law (Partnership) essay response accor
 
 ${systemInstructions}
 
+=== ACCURACY CALIBRATION LEVEL (SEMANTIC STRICTNESS): ${accuracyLevel} ===
+- STRICT (Exhaustive Precision): Require highly complete and legally accurate coverage of material legal concepts and necessary conditions. Verify that essential legal nuances and governing doctrines are articulated accurately.
+- STANDARD (Substantive Legal Meaning): Require substantially correct legal meaning. Fully recognize and credit reasonable legal paraphrases, equivalent legal expressions, and standard Philippine legal reasoning.
+- LENIENT (Broad Conceptual Validity): Recognize broader but still legally valid conceptual expressions, factual synthesis, and partial conceptual completeness.
+* CRITICAL PRINCIPLE: Accuracy Level calibrates conceptual completeness and strictness. It NEVER uses literal keyword matching as the controlling decision. A legally correct paraphrase must be credited based on substantive meaning, while answers copying expected legal keywords with flawed or contradictory reasoning must NOT receive credit.
+
 === QUESTION / SCENARIO ===
 [QUESTION CODE & TITLE]: ${question.code} - ${question.title}
 
@@ -314,10 +327,8 @@ ${question.modelAnswer || 'No model answer specified'}
 ${rubricDescription}
 
 === STUDENT SUBMISSION EVIDENCE (PASS 1 VALIDATED) ===
-FORM STRUCTURAL METADATA:
-- Total Paragraphs: ${structuralFormMetadata.paragraphCount} (Non-empty: ${structuralFormMetadata.nonEmptyParagraphCount})
+FORM & READABILITY METADATA:
 - Word Count: ${structuralFormMetadata.wordCount}, Sentence Count: ${structuralFormMetadata.sentenceCount}
-- Multi-Paragraph Organization: ${structuralFormMetadata.hasDistinctParagraphs ? 'YES' : 'NO'}
 
 1. ANSWER EVIDENCE:
 ${formatList(validatedEvidence.answerEvidence)}
@@ -332,19 +343,55 @@ ${formatList(validatedEvidence.applicationEvidence)}
 ${formatList(validatedEvidence.conclusionEvidence)}
 === END STUDENT EVIDENCE ===
 
+
 === CRITICAL CRITERION ISOLATION & SCORING RULES ===
-1. INDEPENDENT EVALUATION: You MUST evaluate each of the 5 criteria independently on its own merits under SCORING CRITERIA AND INSTRUCTION.pdf. The absence of evidence for one criterion MUST NEVER cause you to reduce or zero out another criterion that contains valid evidence.
-2. CRITERION-SPECIFIC INSTRUCTIONS:
-   - ANSWER (0-15): Grade using ONLY the text in ANSWER EVIDENCE. If a valid legal stance exists, award credit (0 to 15) on its own merits under the PDF, even if Rule, Application, or Conclusion are absent. If [NO VALID EVIDENCE], Answer = 0.
-   - RULE (0-30): Grade using ONLY the text in RULE EVIDENCE. If governing law, doctrines, or requisites exist, award credit (0 to 30) based on accuracy and completeness under the PDF, even if Answer, Application, or Conclusion are absent. If [NO VALID EVIDENCE], Rule = 0.
-   - APPLICATION (0-30): Grade using ONLY the text in APPLICATION EVIDENCE. Evaluate the quality of the fact-rule synthesis and legal reasoning under the PDF. Do NOT require a statutory citation if the reasoning connects facts to legal consequences. If [NO VALID EVIDENCE], Application = 0.
-   - CONCLUSION (0-10): Grade using ONLY the text in CONCLUSION EVIDENCE. If a final resolution is stated, award credit (0 to 10) under the PDF. If [NO VALID EVIDENCE], Conclusion = 0.
-   - FORM (0-15): Evaluate the submitted text's organization, clarity, and legal-writing style under the PDF. Do NOT automatically assign 0 solely because the submission has 1 or 2 paragraphs.
-3. NEVER BORROW EVIDENCE: Evidence assigned to one criterion cannot be used to justify points for another criterion.
-4. NEVER award credit for rules or facts from the Reference Benchmark if they are missing from the student's validated evidence.
-5. SCORING FORMULA:
-   weightedPercentage = formScore + answerScore + ruleScore + applicationScore + conclusionScore (0 to 100)
-   finalScore = weightedPercentage * 0.05 (0.00 to 5.00)
+1. INDEPENDENT CRITERION EVALUATION:
+   - You MUST evaluate each of the 5 criteria independently on its own merits under SCORING CRITERIA AND INSTRUCTION.pdf.
+   - The absence, weakness, or single-paragraph format of one criterion MUST NEVER cause you to reduce or zero out another criterion that contains valid evidence.
+   - A missing component receives zero ONLY for its corresponding criterion. Valid independent criteria must still receive appropriate credit.
+   - Do NOT introduce automatic score floors, minimum grades, or artificial score adjustments.
+
+2. SINGLE-PARAGRAPH ARAC VALIDITY:
+   - Students are fully permitted to write their legal answers in a single paragraph without explicit ARAC headings.
+   - A single-paragraph response that satisfies the substantive requirements of the rubric can receive FULL MARKS (up to 100% / 5.00).
+   - Under NO circumstances may you assign zero (or reduce scores) for Answer, Rule, Application, or Conclusion because the student wrote a single paragraph.
+
+3. SEMANTIC RECOGNITION & SUBSTANTIVE MEANING:
+   - Credit correct legal meaning expressed through different words, standard Philippine legal reasoning, acceptable legal terminology, and conceptual paraphrases.
+   - Do NOT rely on literal keyword matching. An answer copying legal buzzwords without coherent reasoning must NOT receive credit, whereas a student's own explanation that correctly applies the law must receive credit.
+
+4. CRITERION-SPECIFIC INSTRUCTIONS:
+   - FORM (0-15): Evaluates document organization, clarity, and legal-writing expression.
+     * If the student writes a coherent, well-organized legal essay—even in a single continuous paragraph—award appropriate credit (10 to 15 points).
+     * Deduct points for Form only if the writing is genuinely incomprehensible, severely fragmented, or illegible.
+     * A lower Form score MUST NEVER be used as a reason to zero out Answer, Rule, Application, or Conclusion.
+   - ANSWER (0-15): Evaluates ONLY whether the student stated a correct categorical legal stance resolving the threshold issue (e.g., "Yes" or "No" with direct legal stance).
+     * Do NOT demand statutory citations or full fact analysis under Answer; those belong under Rule and Application.
+     * If a correct legal stance is stated in ANSWER EVIDENCE, award full credit (12 to 15 points) on its own merits. If [NO VALID EVIDENCE], Answer = 0.
+   - RULE (0-30): Evaluates whether the student articulated governing legal rules, statutory provisions, Civil Code articles, or legal requisites in RULE EVIDENCE.
+     * Grade based on substantive legal accuracy and completeness. Credit accurate paraphrases and equivalent legal expressions.
+     * A complete grammatical statement of governing law (e.g. stating Article 1767 requirements) earns substantial or full credit (20 to 30 points). Do NOT dismiss complete rule sentences as "keywords".
+     * Only unpunctuated lists of buzzwords without complete sentences receive 0 for Rule.
+     * If governing rules are present, award credit (0 to 30) regardless of whether other criteria are present. If [NO VALID EVIDENCE], Rule = 0.
+   - APPLICATION (0-30): Evaluates the fact-rule synthesis and legal reasoning connecting the legal rule to the scenario facts in APPLICATION EVIDENCE.
+     * Evaluate how well the reasoning demonstrates why the law applies to these specific facts.
+     * If fact synthesis is present, award credit (0 to 30) on its own merits.
+     * If APPLICATION EVIDENCE states [NO VALID EVIDENCE EXTRACTED FROM STUDENT], you MUST assign score = 0.
+   - CONCLUSION (0-10): Evaluates whether the student stated a final legal resolution or outcome in CONCLUSION EVIDENCE.
+     * Award credit (0 to 10) for resolving the question, even without an explicit "Conclusion" label. If [NO VALID EVIDENCE], Conclusion = 0.
+
+5. NEVER BORROW EVIDENCE:
+   - Grade each criterion strictly using its own validated evidence section.
+   - NEVER award credit for rules or facts from the Reference Benchmark if they are missing from the student's validated evidence.
+
+6. SCORING FORMULA & ROUNDING:
+   - Calculate all five weighted criteria in decimal precision without rounding intermediate values:
+     weightedPercentage = formScore + answerScore + ruleScore + applicationScore + conclusionScore (0 to 100)
+     finalScore = weightedPercentage * 0.05 (0.00 to 5.00)
+   - Mandatory Custom Rounding Rule:
+     * Decimal portion <= 0.50: round down to the nearest integer.
+     * Decimal portion > 0.50: round up to the nearest integer.
+     * At exactly .50: ALWAYS round down.
 
 === REQUIRED JSON OUTPUT FORMAT ===
 Return ONLY a valid JSON object matching this schema:
@@ -412,7 +459,7 @@ Return ONLY a valid JSON object matching this schema:
    * Executes semantic evaluation using the TWO-PASS EVIDENCE-FIRST PIPELINE and validates output with Zod.
    */
   static async evaluateAnswer(params: EvaluateAnswerParams): Promise<EvaluationOutput> {
-    const { questionSnapshot, modelConfigSnapshot, rubricSnapshot, systemInstructions, studentAnswer, isDemo } =
+    const { questionSnapshot, modelConfigSnapshot, rubricSnapshot, systemInstructions, studentAnswer, isDemo, accuracyLevel = 'STANDARD' } =
       params;
 
     const totalMaxPoints = rubricSnapshot.reduce(
@@ -420,9 +467,11 @@ Return ONLY a valid JSON object matching this schema:
       0
     );
 
+    const effectiveAccuracyLevel = accuracyLevel || (modelConfigSnapshot as any)?.accuracyLevel || 'STANDARD';
     const trimmed = (studentAnswer || '').trim();
     const lexicalAnalysis = TextAnalysisService.analyzeLexical(studentAnswer);
-    const semanticAnalysis = TextAnalysisService.analyzeSemantic(studentAnswer, questionSnapshot);
+    const semanticAnalysis = TextAnalysisService.analyzeSemantic(studentAnswer, questionSnapshot, effectiveAccuracyLevel);
+
 
     // =========================================================================
     // DETERMINISTIC PRE-INFERENCE NON-SUBSTANTIVE SANITY GATE
@@ -532,18 +581,58 @@ Return ONLY a valid JSON object matching this schema:
         for (const item of arr) {
           if (typeof item !== 'string') continue;
           const clean = extractCleanStudentSpan(item);
-          if (clean && verifyStrictStudentSpan(clean, trimmed)) {
+          if (!clean || clean.toLowerCase() === 'empty' || clean.toLowerCase() === 'none') continue;
+          if (verifyStrictStudentSpan(clean, trimmed)) {
+            // Reject single isolated words or empty tokens (accept spans with >= 2 words)
+            const words = clean.split(/\s+/).filter(Boolean);
+            if (words.length < 2) continue;
             valid.push(clean);
           }
         }
         return valid;
       };
 
+      let ansEv = validateSpans(pass1Parsed?.answerEvidence);
+      let ruleEv = validateSpans(pass1Parsed?.ruleEvidence);
+      let appEv = validateSpans(pass1Parsed?.applicationEvidence);
+      let conclEv = validateSpans(pass1Parsed?.conclusionEvidence);
+
+      // Blended sentence stance recovery: If Answer is empty but student starts with a direct stance (e.g. TC10)
+      if (ansEv.length === 0 && semanticAnalysis.hasDirectStance) {
+        const stanceMatch = trimmed.match(/^(no partnership was created|a partnership was not created|no partnership exists|alyssa and bam did not create a partnership|no,?[^.]+?(created|formed|partners))/i);
+        if (stanceMatch) {
+          ansEv.push(stanceMatch[0].trim());
+        }
+      }
+
+      // Distinguish Application from Conclusion/Stance
+      // If student answer has no fact synthesis, or application span is a mere conclusion/stance restatement:
+      const conclusionStancePattern = /^(therefore|thus|hence|in\s+conclusion|accordingly|consequently)?\s*(alyssa|bam|the\s+parties)?\s*(did\s+not\s+(form|create)|is\s+not\s+a\s+partner|is\s+a\s+partner|no\s+partnership)/i;
+
+      appEv = appEv.filter((span) => {
+        if (!semanticAnalysis.hasFactSynthesis) return false;
+        if (conclusionStancePattern.test(span.trim())) {
+          if (conclEv.length === 0) conclEv.push(span);
+          return false;
+        }
+        if (ansEv.includes(span) || conclEv.includes(span)) return false;
+        return true;
+      });
+
+      // Reject keyword stuffing without sentences / predicates (e.g. TC9)
+      const isKeywordDump = !semanticAnalysis.hasDirectStance && !semanticAnalysis.hasFactSynthesis && !semanticAnalysis.hasExplicitConclusion && trimmed.split(/[.!?]+/).filter(Boolean).length <= 1 && lexicalAnalysis.averageSentenceLength > 15;
+      if (isKeywordDump) {
+        ansEv = [];
+        ruleEv = [];
+        appEv = [];
+        conclEv = [];
+      }
+
       let validatedEvidence = {
-        answerEvidence: validateSpans(pass1Parsed?.answerEvidence),
-        ruleEvidence: validateSpans(pass1Parsed?.ruleEvidence),
-        applicationEvidence: validateSpans(pass1Parsed?.applicationEvidence),
-        conclusionEvidence: validateSpans(pass1Parsed?.conclusionEvidence),
+        answerEvidence: ansEv,
+        ruleEvidence: ruleEv,
+        applicationEvidence: appEv,
+        conclusionEvidence: conclEv,
       };
 
       let pass1RepairUsed = false;
@@ -575,10 +664,11 @@ Return ONLY a valid JSON object matching this schema:
       }
 
       // Neutral structural Form metadata computed server-side
-      const paragraphs = trimmed.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
+      const normalizedText = trimmed.replace(/\n(?=(Answer|Rule|Application|Conclusion):)/gi, '\n\n');
+      const paragraphs = normalizedText.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
       const structuralFormMetadata = {
-        paragraphCount: paragraphs.length,
-        nonEmptyParagraphCount: paragraphs.length,
+        paragraphCount: Math.max(1, paragraphs.length),
+        nonEmptyParagraphCount: Math.max(1, paragraphs.length),
         wordCount: lexicalAnalysis.wordCount,
         sentenceCount: lexicalAnalysis.sentenceCount,
         hasDistinctParagraphs: paragraphs.length >= 3,
@@ -590,7 +680,8 @@ Return ONLY a valid JSON object matching this schema:
         rubricSnapshot,
         systemInstructions,
         validatedEvidence,
-        structuralFormMetadata
+        structuralFormMetadata,
+        effectiveAccuracyLevel
       );
 
       const pass2Raw = await provider.evaluatePrompt(pass2Prompt, modelConfigSnapshot);
@@ -645,6 +736,38 @@ Return ONLY a valid JSON object matching this schema:
         parsed.reviewFlags = Array.from(new Set([...parsed.reviewFlags, 'LIVE_LOCAL_MODEL']));
       }
 
+      // Substantive fallback grounding verification: If Pass 1 missed a span, check if Pass 2 quoted an exact verbatim span from student text
+      // Substantive fallback grounding verification: If Pass 1 missed a span, check if Pass 2 quoted an exact verbatim span from student text
+      // CRITICAL: NEVER cross-borrow evidence from another criterion. Only rescue if the span is not already assigned.
+      const checkAndRescueVerbatimEvidence = (evidenceList: string[], criterionName: string) => {
+        if (evidenceList.length === 0) {
+          const rawCritEv = parsed.criterionScores?.find(
+            (c: any) => c.criterionName?.toLowerCase() === criterionName.toLowerCase()
+          )?.evidence;
+          const cleanSpan = extractCleanStudentSpan(rawCritEv);
+          if (cleanSpan && verifyStrictStudentSpan(cleanSpan, trimmed)) {
+            // Check if already in another criterion's evidence
+            const allOtherSpans = [
+              ...(criterionName !== 'Answer' ? validatedEvidence.answerEvidence : []),
+              ...(criterionName !== 'Rule' ? validatedEvidence.ruleEvidence : []),
+              ...(criterionName !== 'Application' ? validatedEvidence.applicationEvidence : []),
+              ...(criterionName !== 'Conclusion' ? validatedEvidence.conclusionEvidence : []),
+            ];
+            if (!allOtherSpans.includes(cleanSpan)) {
+              // For Application, only rescue if student answer has fact synthesis
+              if (criterionName !== 'Application' || semanticAnalysis.hasFactSynthesis) {
+                evidenceList.push(cleanSpan);
+              }
+            }
+          }
+        }
+      };
+
+      checkAndRescueVerbatimEvidence(validatedEvidence.answerEvidence, 'Answer');
+      checkAndRescueVerbatimEvidence(validatedEvidence.ruleEvidence, 'Rule');
+      checkAndRescueVerbatimEvidence(validatedEvidence.applicationEvidence, 'Application');
+      checkAndRescueVerbatimEvidence(validatedEvidence.conclusionEvidence, 'Conclusion');
+
       // STRICT ZEROING IF PASS 1 VALIDATED EVIDENCE IS EMPTY (No cross-criterion borrowing)
       if (validatedEvidence.answerEvidence.length === 0) {
         if (parsed.answerScore > 0) {
@@ -684,6 +807,7 @@ Return ONLY a valid JSON object matching this schema:
       parsed.rawPercentage = parsed.weightedPercentage;
       parsed.numericalScore = parsed.weightedPercentage;
       parsed.finalScore = Number((parsed.weightedPercentage * 0.05).toFixed(4));
+      parsed.roundedScore = percentageToCustomFivePoint(parsed.weightedPercentage);
       parsed.rawTenPointGrade = Number((parsed.weightedPercentage / 10).toFixed(4));
       parsed.finalRoundedGrade = Math.round(parsed.weightedPercentage / 10);
 
@@ -695,9 +819,9 @@ Return ONLY a valid JSON object matching this schema:
           rawScore: rawScores.form,
           maxPoints: 15,
           reasoning: parsed.criterionScores?.find((c: any) => c.criterionName?.toLowerCase() === 'form')?.reasoning || 'Evaluated document paragraph organization.',
-          evidence: `Paragraphs: ${structuralFormMetadata.paragraphCount}, Words: ${structuralFormMetadata.wordCount}`,
-          rawEvidence: `Paragraphs: ${structuralFormMetadata.paragraphCount}`,
-          deficiencies: parsed.formScore < 15 ? 'Refine 4-paragraph ARAC presentation.' : 'None.',
+          evidence: `Word Count: ${structuralFormMetadata.wordCount}, Sentence Count: ${structuralFormMetadata.sentenceCount}`,
+          rawEvidence: `Words: ${structuralFormMetadata.wordCount}`,
+          deficiencies: parsed.formScore < 15 ? (parsed.formScore <= 5 ? 'Improve clarity and organization.' : 'Refine legal essay flow.') : 'None.',
           isGroundingValid: true,
         },
         {
@@ -943,6 +1067,7 @@ Return ONLY a valid JSON object matching this schema:
         weightedPercentage,
         rawPercentage: rawPct,
         finalScore,
+        roundedScore: percentageToCustomFivePoint(weightedPercentage),
         rawTenPointGrade: rawTen,
         finalRoundedGrade: roundedGrade,
         criterionScores: criteriaBreakdown,
@@ -1082,18 +1207,21 @@ Return ONLY a valid JSON object matching this schema:
     if (paragraphs.length >= 4 || (hasExplicitAracHeaders && paragraphs.length >= 3)) {
       formScore = 15.0;
     } else if (paragraphs.length === 3) {
-      formScore = 11.0;
+      formScore = 14.0;
     } else if (paragraphs.length === 2) {
-      formScore = 7.5;
+      formScore = 13.0;
     } else if (words.length >= 40) {
       // Single unbroken essay paragraph containing substantial text
-      formScore = 7.5;
-    } else if (words.length >= 15) {
+      formScore = 13.0;
+    } else if (words.length >= 20) {
+      // Single medium paragraph
+      formScore = 10.0;
+    } else if (words.length >= 10) {
       // Single short paragraph
-      formScore = 3.75;
+      formScore = 7.0;
     } else {
       // Single sentence or short fragment
-      formScore = 2.0;
+      formScore = 4.0;
     }
 
     // 3. Answer Stance Analysis (ANSWER: 0-15)

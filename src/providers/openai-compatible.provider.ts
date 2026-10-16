@@ -60,7 +60,7 @@ export class OpenAICompatibleProvider implements ILLMProvider {
         max_tokens: config.maxOutputTokens ?? config.maxTokens ?? 2048,
         response_format: { type: 'json_object' },
       }),
-      signal: AbortSignal.timeout(isOllama ? 90000 : 45000),
+      signal: AbortSignal.timeout(isOllama ? 180000 : 60000),
     });
 
     if (!response.ok) {

@@ -163,4 +163,188 @@ export class ModelConfigService {
 
     return this.getAllModelConfigs();
   }
+
+  /**
+   * Retrieves global system settings (student display model, accuracy level, active test set).
+   */
+  static async getSystemSettings(): Promise<{
+    studentDisplayModel: 'MODEL_A' | 'MODEL_B' | 'MODEL_C';
+    accuracyLevel: 'STRICT' | 'STANDARD' | 'LENIENT';
+    activeTestSet: string;
+    testSetStatuses: Record<'TEST_1' | 'TEST_2' | 'TEST_3' | 'TEST_4', 'DRAFT' | 'ACTIVE' | 'ARCHIVED'>;
+  }> {
+    let setting = await prisma.systemSetting.findUnique({
+      where: { id: 'global' },
+    });
+
+    const defaultStatuses: Record<'TEST_1' | 'TEST_2' | 'TEST_3' | 'TEST_4', 'DRAFT' | 'ACTIVE' | 'ARCHIVED'> = {
+      TEST_1: 'ACTIVE',
+      TEST_2: 'DRAFT',
+      TEST_3: 'DRAFT',
+      TEST_4: 'DRAFT',
+    };
+
+    if (!setting) {
+      setting = await prisma.systemSetting.create({
+        data: {
+          id: 'global',
+          studentDisplayModel: 'MODEL_A',
+          accuracyLevel: 'STANDARD',
+          activeTestSet: 'TEST_1',
+          testSetStatuses: JSON.stringify(defaultStatuses),
+        },
+      });
+    }
+
+    let parsedStatuses = defaultStatuses;
+    if (setting.testSetStatuses) {
+      try {
+        parsedStatuses = { ...defaultStatuses, ...JSON.parse(setting.testSetStatuses) };
+      } catch {
+        parsedStatuses = defaultStatuses;
+      }
+    }
+
+    return {
+      studentDisplayModel: (setting.studentDisplayModel as any) || 'MODEL_A',
+      accuracyLevel: (setting.accuracyLevel as any) || 'STANDARD',
+      activeTestSet: setting.activeTestSet || 'TEST_1',
+      testSetStatuses: parsedStatuses,
+    };
+  }
+
+  /**
+   * Updates global system settings without modifying stored evaluation records.
+   */
+  static async updateSystemSettings(
+    data: {
+      studentDisplayModel?: 'MODEL_A' | 'MODEL_B' | 'MODEL_C';
+      accuracyLevel?: 'STRICT' | 'STANDARD' | 'LENIENT';
+      activeTestSet?: string;
+      testSetStatuses?: Record<string, 'DRAFT' | 'ACTIVE' | 'ARCHIVED'>;
+    },
+    adminUserId?: string
+  ) {
+    const validSlots = ['MODEL_A', 'MODEL_B', 'MODEL_C'];
+    const validLevels = ['STRICT', 'STANDARD', 'LENIENT'];
+    const validSets = ['TEST_1', 'TEST_2', 'TEST_3', 'TEST_4'];
+
+    if (data.studentDisplayModel && !validSlots.includes(data.studentDisplayModel)) {
+      throw new Error(`Invalid student display model slot: ${data.studentDisplayModel}`);
+    }
+
+    if (data.accuracyLevel && !validLevels.includes(data.accuracyLevel)) {
+      throw new Error(`Invalid accuracy level: ${data.accuracyLevel}`);
+    }
+
+    if (data.activeTestSet && !validSets.includes(data.activeTestSet)) {
+      throw new Error(`Invalid active test set: ${data.activeTestSet}`);
+    }
+
+    const current = await this.getSystemSettings();
+    let updatedStatuses = current.testSetStatuses;
+
+    if (data.testSetStatuses) {
+      updatedStatuses = {
+        ...current.testSetStatuses,
+        ...data.testSetStatuses,
+      };
+    }
+
+    const updated = await prisma.systemSetting.upsert({
+      where: { id: 'global' },
+      update: {
+        ...(data.studentDisplayModel && { studentDisplayModel: data.studentDisplayModel }),
+        ...(data.accuracyLevel && { accuracyLevel: data.accuracyLevel }),
+        ...(data.activeTestSet && { activeTestSet: data.activeTestSet }),
+        testSetStatuses: JSON.stringify(updatedStatuses),
+      },
+      create: {
+        id: 'global',
+        studentDisplayModel: data.studentDisplayModel || 'MODEL_A',
+        accuracyLevel: data.accuracyLevel || 'STANDARD',
+        activeTestSet: data.activeTestSet || 'TEST_1',
+        testSetStatuses: JSON.stringify(updatedStatuses),
+      },
+    });
+
+    await AuditService.logAction({
+      userId: adminUserId || 'system',
+      action: 'UPDATE_SYSTEM_SETTINGS',
+      entityType: 'SYSTEM_SETTINGS',
+      entityId: 'global',
+      details: {
+        studentDisplayModel: updated.studentDisplayModel,
+        accuracyLevel: updated.accuracyLevel,
+        activeTestSet: updated.activeTestSet,
+        testSetStatuses: updatedStatuses,
+      },
+      isDemo: true,
+    });
+
+    return {
+      studentDisplayModel: updated.studentDisplayModel as 'MODEL_A' | 'MODEL_B' | 'MODEL_C',
+      accuracyLevel: updated.accuracyLevel as 'STRICT' | 'STANDARD' | 'LENIENT',
+      activeTestSet: updated.activeTestSet,
+      testSetStatuses: updatedStatuses,
+    };
+  }
+
+  /**
+   * Publishes a test set making it ACTIVE for student assessment sessions.
+   * Modifies ONLY the target test without modifying any other tests.
+   */
+  static async publishTestSet(testSet: 'TEST_1' | 'TEST_2' | 'TEST_3' | 'TEST_4', adminUserId?: string) {
+    const current = await this.getSystemSettings();
+    const newStatuses = { ...current.testSetStatuses };
+
+    // Set ONLY target to ACTIVE
+    newStatuses[testSet] = 'ACTIVE';
+
+    return this.updateSystemSettings(
+      {
+        testSetStatuses: newStatuses,
+      },
+      adminUserId
+    );
+  }
+
+  /**
+   * Archives a test set, hiding it from student assessment while preserving historical records.
+   * Modifies ONLY the target test without modifying any other tests.
+   */
+  static async archiveTestSet(testSet: 'TEST_1' | 'TEST_2' | 'TEST_3' | 'TEST_4', adminUserId?: string) {
+    const current = await this.getSystemSettings();
+    const newStatuses = { ...current.testSetStatuses };
+
+    // Set ONLY target to ARCHIVED
+    newStatuses[testSet] = 'ARCHIVED';
+
+    return this.updateSystemSettings(
+      {
+        testSetStatuses: newStatuses,
+      },
+      adminUserId
+    );
+  }
+
+  /**
+   * Sets a test set status to DRAFT.
+   * Modifies ONLY the target test without modifying any other tests.
+   */
+  static async draftTestSet(testSet: 'TEST_1' | 'TEST_2' | 'TEST_3' | 'TEST_4', adminUserId?: string) {
+    const current = await this.getSystemSettings();
+    const newStatuses = { ...current.testSetStatuses };
+
+    // Set ONLY target to DRAFT
+    newStatuses[testSet] = 'DRAFT';
+
+    return this.updateSystemSettings(
+      {
+        testSetStatuses: newStatuses,
+      },
+      adminUserId
+    );
+  }
 }
+

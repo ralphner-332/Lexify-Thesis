@@ -36,6 +36,7 @@ model Question {
   statutoryElements  String   @default("[]") // JSON string of required elements
   relevantProvisions String   @default("[]") // JSON string of legal citations
   conceptVariations  String   @default("[]") // JSON string of acceptable phrasing
+  testSet            String?  @default("TEST_1") // "TEST_1" | "TEST_2" | "TEST_3" | "TEST_4"
   isActive           Boolean  @default(true)
   orderIndex         Int      @default(0)
   isDemo             Boolean  @default(true)
@@ -320,13 +321,13 @@ model AuditLog {
 model ModelConfigSetting {
   id                  String   @id @default(uuid())
   modelSlot           String   @unique // "MODEL_A" | "MODEL_B" | "MODEL_C"
-  researchName        String   // "Meta Llama 3.1 8B", "Mistral 7B", "Gemma 2 9B"
-  modelFamily         String   // "Llama 3.1", "Mistral", "Gemma 2"
-  parameterClass      String   // "8B", "7B", "9B"
-  provider            String   @default("openrouter") // "openrouter" | "groq" | "together" | "mistral" | "google" | "custom"
-  exactModelId        String   // e.g. "meta-llama/llama-3.1-8b-instruct"
+  researchName        String   // "Meta Llama 3.2 3B", "Microsoft Phi-4-mini", "Google Gemma 2 2B"
+  modelFamily         String   // "Llama 3.2", "Phi-4", "Gemma 2"
+  parameterClass      String   // "3B", "3.8B", "2B"
+  provider            String   @default("ollama") // "ollama" | "openrouter" | "custom"
+  exactModelId        String   // e.g. "llama3.2:3b"
   endpointUrl         String?  // Optional custom endpoint URL
-  apiKeyEnvVar        String   @default("OPENROUTER_API_KEY")
+  apiKeyEnvVar        String   @default("LOCAL_INFERENCE")
   temperature         Float    @default(0.2)
   topP                Float    @default(0.95)
   maxTokens           Int      @default(2048)
@@ -338,3 +339,16 @@ model ModelConfigSetting {
 
   @@map("model_config_settings")
 }
+
+model SystemSetting {
+  id                  String   @id @default("global")
+  studentDisplayModel String   @default("MODEL_A") // "MODEL_A" | "MODEL_B" | "MODEL_C"
+  accuracyLevel       String   @default("STANDARD") // "STRICT" | "STANDARD" | "LENIENT"
+  activeTestSet       String   @default("TEST_1")   // "TEST_1" | "TEST_2" | "TEST_3" | "TEST_4"
+  testSetStatuses     String   @default("{\"TEST_1\":\"ACTIVE\",\"TEST_2\":\"DRAFT\",\"TEST_3\":\"DRAFT\",\"TEST_4\":\"DRAFT\"}")
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@map("system_settings")
+}
+

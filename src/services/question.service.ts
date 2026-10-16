@@ -10,16 +10,20 @@ export interface CreateQuestionInput {
   statutoryElements: string[];
   relevantProvisions: string[];
   conceptVariations: string[];
+  testSet?: string | null;
   orderIndex?: number;
   isActive?: boolean;
   isDemo?: boolean;
 }
 
 export class QuestionService {
-  static async listQuestions(role?: string, includeInactive: boolean = false) {
+  static async listQuestions(role?: string, includeInactive: boolean = true, testSet?: string) {
     const where: any = {};
-    if (!includeInactive && role === 'STUDENT') {
+    if (!includeInactive || role === 'STUDENT') {
       where.isActive = true;
+    }
+    if (testSet && testSet !== 'ALL') {
+      where.testSet = testSet;
     }
 
     const questions = await prisma.question.findMany({
@@ -60,9 +64,10 @@ export class QuestionService {
         statutoryElements: JSON.stringify(input.statutoryElements || []),
         relevantProvisions: JSON.stringify(input.relevantProvisions || []),
         conceptVariations: JSON.stringify(input.conceptVariations || []),
+        testSet: input.testSet || 'TEST_1',
         orderIndex: input.orderIndex ?? 0,
         isActive: input.isActive ?? true,
-        isDemo: input.isDemo ?? true,
+        isDemo: input.isDemo ?? false,
       },
     });
 
@@ -100,6 +105,7 @@ export class QuestionService {
       data.relevantProvisions = JSON.stringify(input.relevantProvisions);
     if (input.conceptVariations !== undefined)
       data.conceptVariations = JSON.stringify(input.conceptVariations);
+    if (input.testSet !== undefined) data.testSet = input.testSet;
     if (input.orderIndex !== undefined) data.orderIndex = input.orderIndex;
     if (input.isActive !== undefined) data.isActive = input.isActive;
     if (input.isDemo !== undefined) data.isDemo = input.isDemo;

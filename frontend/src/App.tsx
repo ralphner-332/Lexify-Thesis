@@ -17,7 +17,10 @@ import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { QuestionManager } from './pages/admin/QuestionManager';
 import { RubricBuilder } from './pages/admin/RubricBuilder';
 import { ModelConfigConsole } from './pages/admin/ModelConfigConsole';
-import { MultiModelSubmissionsExplorer } from './pages/admin/MultiModelSubmissionsExplorer';
+import { SubmissionsExplorer } from './pages/admin/SubmissionsExplorer';
+import { ModelComparisonDashboard } from './pages/admin/ModelComparisonDashboard';
+import { QuestionComparisonDashboard } from './pages/admin/QuestionComparisonDashboard';
+import { SummativeComparisonDashboard } from './pages/admin/SummativeComparisonDashboard';
 import { ResearchExportReportPortal } from './pages/admin/ResearchExportReportPortal';
 
 // Root Route Decider
@@ -64,9 +67,12 @@ export const App: React.FC = () => {
               {/* Administrator Consoles (Role: ADMIN) */}
               <Route element={<ProtectedLayout allowedRoles={['ADMIN']} />}>
                 <Route path="/admin" element={<AdminDashboard />} />
-                <Route path="/admin/submissions" element={<MultiModelSubmissionsExplorer />} />
-                <Route path="/admin/comparisons" element={<MultiModelSubmissionsExplorer />} />
-                <Route path="/admin/evaluations/:evaluationId" element={<MultiModelSubmissionsExplorer />} />
+                <Route path="/admin/submissions" element={<SubmissionsExplorer />} />
+                <Route path="/admin/comparisons" element={<ModelComparisonDashboard />} />
+                <Route path="/admin/comparisons/student" element={<ModelComparisonDashboard />} />
+                <Route path="/admin/comparisons/question" element={<QuestionComparisonDashboard />} />
+                <Route path="/admin/comparisons/summative" element={<SummativeComparisonDashboard />} />
+                <Route path="/admin/model-comparison" element={<ModelComparisonDashboard />} />
                 <Route path="/admin/questions" element={<QuestionManager />} />
                 <Route path="/admin/rubrics" element={<RubricBuilder />} />
                 <Route path="/admin/models" element={<ModelConfigConsole />} />

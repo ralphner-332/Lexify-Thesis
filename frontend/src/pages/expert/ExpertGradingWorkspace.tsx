@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../../api/client';
 import { ExpertSubmissionDetail } from '../../types';
+import { percentageToCustomFivePoint } from '../../utils/scoring';
 import {
   Scale,
   ShieldCheck,
@@ -200,8 +201,8 @@ export const ExpertGradingWorkspace: React.FC = () => {
             <div className="flex items-baseline space-x-1.5 justify-end">
               <span className="text-lg font-bold text-slate-900">{currentTotalScore}%</span>
               <span className="text-xl font-black text-emerald-700">
-                {(currentTotalScore * 0.05).toFixed(2)}{' '}
-                <span className="text-xs font-bold text-emerald-600">/ 5.00</span>
+                {percentageToCustomFivePoint(currentTotalScore)}{' '}
+                <span className="text-xs font-bold text-emerald-600">/ 5</span>
               </span>
             </div>
           </div>

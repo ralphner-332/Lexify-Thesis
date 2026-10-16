@@ -19,15 +19,26 @@ export class EvaluationService {
    * MODEL_B -> evaluate -> persist -> unload
    * MODEL_C -> evaluate -> persist -> unload
    */
-  static async evaluateSessionSubmissions(session: any) {
+  static async evaluateSessionSubmissions(
+    session: any,
+    onProgress?: (progress: {
+      completed: number;
+      total: number;
+      modelSlot: string;
+      modelName: string;
+      questionCode: string;
+      status: 'PROCESSING' | 'COMPLETED';
+    }) => Promise<void>
+  ) {
     const fullQuestions: any[] = safeParseJson(session.questionsSnapshot, []);
     const drafts = session.drafts || [];
 
-    // Fetch active Rubric, baseline AgentVersion, and all 3 locked Model Configurations
-    const [activeRubric, activeAgentVersion, modelConfigs] = await Promise.all([
+    // Fetch active Rubric, baseline AgentVersion, all 3 locked Model Configurations, and System Settings
+    const [activeRubric, activeAgentVersion, modelConfigs, systemSettings] = await Promise.all([
       RubricService.getDefaultRubric(),
       AgentVersionService.getActiveVersion(),
       ModelConfigService.getAllModelConfigs(),
+      ModelConfigService.getSystemSettings(),
     ]);
 
     if (!activeRubric) {
@@ -101,15 +112,57 @@ export class EvaluationService {
 
     const rubricSnapshot = activeRubric.criteria;
     const createdEvaluations: any[] = [];
+    const totalEvaluations = modelsToEvaluate.length * fullQuestions.length;
+    let completedEvaluations = 0;
 
-    for (const draft of drafts) {
-      const questionSnapshot = fullQuestions.find((q: any) => q.id === draft.questionId);
-      if (!questionSnapshot) {
-        throw new Error(`Question ${draft.questionId} not found in session snapshot.`);
-      }
+    // Model-Sequential Execution Pipeline:
+    // MODEL_A -> evaluate all questions -> unload
+    // MODEL_B -> evaluate all questions -> unload
+    // MODEL_C -> evaluate all questions -> unload
+    for (const modelConfig of modelsToEvaluate) {
+      console.log(`[MODEL PIPELINE] Starting batch evaluation for ${modelConfig.modelSlot} (${modelConfig.researchName})...`);
 
-      // Sequential Execution: MODEL_A -> MODEL_B -> MODEL_C
-      for (const modelConfig of modelsToEvaluate) {
+      for (const questionSnapshot of fullQuestions) {
+        const draft = drafts.find((d: any) => d.questionId === questionSnapshot.id);
+        const answerText = draft?.answerText || '';
+
+        // Check if this model evaluation already exists for this session + question
+        const existingEval = await prisma.evaluation.findFirst({
+          where: {
+            sessionId: session.id,
+            questionId: questionSnapshot.id,
+            modelSlot: modelConfig.modelSlot,
+          },
+        });
+
+        if (existingEval) {
+          createdEvaluations.push(existingEval);
+          completedEvaluations++;
+          if (onProgress) {
+            await onProgress({
+              completed: completedEvaluations,
+              total: totalEvaluations,
+              modelSlot: modelConfig.modelSlot,
+              modelName: modelConfig.researchName,
+              questionCode: questionSnapshot.code,
+              status: completedEvaluations >= totalEvaluations ? 'COMPLETED' : 'PROCESSING',
+            });
+          }
+          continue;
+        }
+
+        // Notify that this question evaluation is starting
+        if (onProgress) {
+          await onProgress({
+            completed: completedEvaluations,
+            total: totalEvaluations,
+            modelSlot: modelConfig.modelSlot,
+            modelName: modelConfig.researchName,
+            questionCode: questionSnapshot.code,
+            status: 'PROCESSING',
+          });
+        }
+
         const modelConfigSnapshot = {
           modelSlot: modelConfig.modelSlot,
           researchName: modelConfig.researchName,
@@ -125,75 +178,98 @@ export class EvaluationService {
           topP: modelConfig.topP,
           maxTokens: modelConfig.maxTokens,
           apiKeyEnvVar: modelConfig.apiKeyEnvVar,
+          accuracyLevel: systemSettings.accuracyLevel,
         };
 
-        const evalResult = await AiEvaluatorService.evaluateAnswer({
-          questionSnapshot,
-          modelConfigSnapshot,
-          rubricSnapshot,
-          systemInstructions: modelConfig.systemInstructions || activeAgentVersion.systemInstructions,
-          studentAnswer: draft.answerText,
-          isDemo: session.isDemo,
-        });
-
-        const createdEval = await prisma.evaluation.create({
-          data: {
-            sessionId: session.id,
-            studentId: session.studentId,
-            questionId: draft.questionId,
-            agentVersionId: activeAgentVersion.id,
-            modelSlot: modelConfig.modelSlot,
-            modelFamily: modelConfig.modelFamily,
-            exactModelId: modelConfig.exactModelId,
-            questionSnapshot: JSON.stringify(questionSnapshot),
-            modelConfigSnapshot: JSON.stringify(modelConfigSnapshot),
-            rubricSnapshot: JSON.stringify(rubricSnapshot),
-            studentAnswer: draft.answerText,
-            numericalScore: evalResult.numericalScore,
-            maxScore: evalResult.maxScore,
-            scoringBasis: evalResult.scoringBasis,
-            criterionScores: JSON.stringify(evalResult.criterionScores),
-            strengths: JSON.stringify(evalResult.strengths),
-            missingElements: JSON.stringify(evalResult.missingElements),
-            areasForImprovement: JSON.stringify(evalResult.areasForImprovement),
-            lexicalAnalysis: JSON.stringify(evalResult.lexicalAnalysis || {}),
-            semanticAnalysis: JSON.stringify(evalResult.semanticAnalysis || {}),
-            confidenceScore: evalResult.confidenceScore,
-            reviewFlags: JSON.stringify(evalResult.reviewFlags),
+        try {
+          const evalResult = await AiEvaluatorService.evaluateAnswer({
+            questionSnapshot,
+            modelConfigSnapshot,
+            rubricSnapshot,
+            systemInstructions: modelConfig.systemInstructions || activeAgentVersion.systemInstructions,
+            studentAnswer: answerText,
             isDemo: session.isDemo,
-          },
-        });
+            accuracyLevel: systemSettings.accuracyLevel,
+          });
 
-        await AuditService.logAction({
-          userId: session.studentId,
-          action: 'CREATE_AI_EVALUATION',
-          entityType: 'EVALUATION',
-          entityId: createdEval.id,
-          details: {
-            sessionId: session.id,
-            questionCode: questionSnapshot.code,
-            modelSlot: modelConfig.modelSlot,
-            researchName: modelConfig.researchName,
-            exactModelId: modelConfig.exactModelId,
-            score: createdEval.numericalScore,
-            maxScore: createdEval.maxScore,
-          },
-          isDemo: session.isDemo,
-        });
+          const createdEval = await prisma.evaluation.create({
+            data: {
+              sessionId: session.id,
+              studentId: session.studentId,
+              questionId: questionSnapshot.id,
+              agentVersionId: activeAgentVersion.id,
+              modelSlot: modelConfig.modelSlot,
+              modelFamily: modelConfig.modelFamily,
+              exactModelId: modelConfig.exactModelId,
+              questionSnapshot: JSON.stringify(questionSnapshot),
+              modelConfigSnapshot: JSON.stringify(modelConfigSnapshot),
+              rubricSnapshot: JSON.stringify(rubricSnapshot),
+              studentAnswer: answerText,
+              numericalScore: evalResult.numericalScore,
+              maxScore: evalResult.maxScore,
+              scoringBasis: evalResult.scoringBasis,
+              criterionScores: JSON.stringify(evalResult.criterionScores),
+              strengths: JSON.stringify(evalResult.strengths),
+              missingElements: JSON.stringify(evalResult.missingElements),
+              areasForImprovement: JSON.stringify(evalResult.areasForImprovement),
+              lexicalAnalysis: JSON.stringify(evalResult.lexicalAnalysis || {}),
+              semanticAnalysis: JSON.stringify(evalResult.semanticAnalysis || {}),
+              confidenceScore: evalResult.confidenceScore,
+              reviewFlags: JSON.stringify(evalResult.reviewFlags),
+              isDemo: session.isDemo,
+            },
+          });
 
-        console.log(
-          `[EVALUATION PROVENANCE] ${questionSnapshot.code} -> ${modelConfig.modelSlot} (${modelConfig.researchName}) -> ${modelConfig.exactModelId} -> ${createdEval.id} -> Raw Score: ${createdEval.numericalScore}`
-        );
+          await AuditService.logAction({
+            userId: session.studentId,
+            action: 'CREATE_AI_EVALUATION',
+            entityType: 'EVALUATION',
+            entityId: createdEval.id,
+            details: {
+              sessionId: session.id,
+              questionCode: questionSnapshot.code,
+              modelSlot: modelConfig.modelSlot,
+              researchName: modelConfig.researchName,
+              exactModelId: modelConfig.exactModelId,
+              score: createdEval.numericalScore,
+              maxScore: createdEval.maxScore,
+              accuracyLevel: systemSettings.accuracyLevel,
+            },
+            isDemo: session.isDemo,
+          });
 
-        // Immediate Model Unload: Release VRAM/RAM before invoking the next model
-        if (modelConfig.provider === 'ollama') {
-          await OpenAICompatibleProvider.unloadOllamaModel(
-            modelConfig.exactModelId,
-            modelConfig.endpointUrl || undefined
+          console.log(
+            `[EVALUATION PROVENANCE] ${questionSnapshot.code} -> ${modelConfig.modelSlot} (${modelConfig.researchName}) -> ${modelConfig.exactModelId} -> ${createdEval.id} -> Raw Score: ${createdEval.numericalScore} (Accuracy: ${systemSettings.accuracyLevel})`
+          );
+
+          createdEvaluations.push(createdEval);
+          completedEvaluations++;
+
+          if (onProgress) {
+            await onProgress({
+              completed: completedEvaluations,
+              total: totalEvaluations,
+              modelSlot: modelConfig.modelSlot,
+              modelName: modelConfig.researchName,
+              questionCode: questionSnapshot.code,
+              status: completedEvaluations >= totalEvaluations ? 'COMPLETED' : 'PROCESSING',
+            });
+          }
+        } catch (evalErr: any) {
+          console.error(
+            `⚠️ Error evaluating ${questionSnapshot.code} with ${modelConfig.modelSlot}:`,
+            evalErr.message
           );
         }
+      }
 
-        createdEvaluations.push(createdEval);
+      // Model Unload: Release VRAM/RAM after completing all questions for this model
+      if (modelConfig.provider === 'ollama') {
+        await OpenAICompatibleProvider.unloadOllamaModel(
+          modelConfig.exactModelId,
+          modelConfig.endpointUrl || undefined
+        );
+        console.log(`[MODEL PIPELINE] Unloaded ${modelConfig.exactModelId} from VRAM.`);
       }
     }
 
@@ -202,9 +278,8 @@ export class EvaluationService {
 
   /**
    * Retrieves student diagnostic feedback for a submitted session.
-   * - For Demo Mode (isDemo: true): returns full evaluations for interactive testing.
-   * - For Official Research (isDemo: false): unblinded comparative triple-model research scores
-   *   are kept for researcher/admin analysis; returns clean student feedback format.
+   * Filters by the Admin-configured Student Display Model (MODEL_A, MODEL_B, or MODEL_C)
+   * while keeping all three model evaluations stored in the research database.
    */
   static async getStudentSessionEvaluations(sessionId: string, studentId: string) {
     const session = await prisma.assessmentSession.findUnique({
@@ -223,26 +298,30 @@ export class EvaluationService {
       throw new Error('Evaluation feedback is only available after submitting the assessment.');
     }
 
-    const evaluations = await prisma.evaluation.findMany({
-      where: { sessionId },
-    });
+    const [evaluations, systemSettings] = await Promise.all([
+      prisma.evaluation.findMany({
+        where: { sessionId },
+      }),
+      ModelConfigService.getSystemSettings(),
+    ]);
 
     const questionsSnapshot = safeParseJson(session.questionsSnapshot, []);
-    const qOrderMap = new Map<string, number>();
-    questionsSnapshot.forEach((q: any, idx: number) => {
-      qOrderMap.set(q.id, idx);
-    });
+    const displaySlot = systemSettings.studentDisplayModel || 'MODEL_A';
+    const selectedEvaluations: any[] = [];
 
-    evaluations.sort((a, b) => {
-      const orderA = qOrderMap.get(a.questionId) ?? 999;
-      const orderB = qOrderMap.get(b.questionId) ?? 999;
-      if (orderA !== orderB) return orderA - orderB;
-      return (a.modelSlot || '').localeCompare(b.modelSlot || '');
-    });
+    for (const q of questionsSnapshot) {
+      const qEvals = evaluations.filter((e) => e.questionId === q.id);
+      // Select evaluation for the configured student display model slot, or fallback to first available
+      const chosen = qEvals.find((e) => e.modelSlot === displaySlot) || qEvals[0];
+      if (chosen) {
+        selectedEvaluations.push(chosen);
+      }
+    }
 
-    // Return full evaluations across all three models for student feedback
-    return evaluations.map((e) => EvaluationDTO.toStudentDTO(e));
+    // Return sanitized evaluation objects (model identities and internal prompts stripped)
+    return selectedEvaluations.map((e) => EvaluationDTO.toStudentDTO(e));
   }
+
 
   /**
    * Researcher Admin query to inspect all evaluation records with snapshots and filters.

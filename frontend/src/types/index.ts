@@ -13,6 +13,7 @@ export interface Question {
   id: string;
   code: string;
   title: string;
+  testSet?: string;
   scenario: string;
   modelAnswer?: string; // Optional for students (stripped on server)
   statutoryElements?: string[];
@@ -101,6 +102,7 @@ export interface StudentQuestionItem {
   id: string;
   code: string;
   title: string;
+  testSet?: string;
   scenario: string;
   orderIndex: number;
   draftAnswer: string;
@@ -110,6 +112,7 @@ export interface StudentQuestionItem {
 export interface AssessmentSession {
   id: string;
   studentId: string;
+  testSet?: string;
   status: 'IN_PROGRESS' | 'SUBMITTED';
   startedAt: string;
   submittedAt?: string | null;
@@ -152,6 +155,14 @@ export interface ModelConfigSetting {
   hasApiKeyConfigured: boolean;
 }
 
+export interface SystemSettings {
+  studentDisplayModel: 'MODEL_A' | 'MODEL_B' | 'MODEL_C';
+  accuracyLevel: 'STRICT' | 'STANDARD' | 'LENIENT';
+  activeTestSet?: 'TEST_1' | 'TEST_2' | 'TEST_3' | 'TEST_4' | string;
+  testSetStatuses?: Record<'TEST_1' | 'TEST_2' | 'TEST_3' | 'TEST_4', 'DRAFT' | 'ACTIVE' | 'ARCHIVED'>;
+}
+
+
 export interface StudentEvaluationFeedback {
   id: string;
   questionId: string;
@@ -161,6 +172,7 @@ export interface StudentEvaluationFeedback {
   numericalScore: number;
   weightedPercentage?: number;
   finalScore?: number;
+  roundedScore?: number;
   maxScore: number;
   scoringBasis: string;
   criterionScores: CriterionScore[];
@@ -186,6 +198,7 @@ export interface AdminEvaluation {
   studentEmail?: string;
   questionId: string;
   agentVersionId?: string;
+  agentVersionTag?: string;
   modelSlot: 'MODEL_A' | 'MODEL_B' | 'MODEL_C' | string;
   modelFamily: string;
   exactModelId: string;
@@ -196,6 +209,7 @@ export interface AdminEvaluation {
   numericalScore: number;
   weightedPercentage?: number;
   finalScore?: number;
+  roundedScore?: number;
   maxScore: number;
   scoringBasis: string;
   criterionScores: CriterionScore[];

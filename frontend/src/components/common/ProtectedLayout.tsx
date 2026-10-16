@@ -29,7 +29,6 @@ export const ProtectedLayout: React.FC<ProtectedLayoutProps> = ({ allowedRoles }
   if (allowedRoles && role && !allowedRoles.includes(role)) {
     // Redirect to respective dashboard if role not allowed
     if (role === 'STUDENT') return <Navigate to="/student" replace />;
-    if (role === 'EXPERT') return <Navigate to="/expert" replace />;
     if (role === 'ADMIN') return <Navigate to="/admin" replace />;
     return <Navigate to="/login" replace />;
   }
@@ -37,7 +36,7 @@ export const ProtectedLayout: React.FC<ProtectedLayoutProps> = ({ allowedRoles }
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
       <Navbar />
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+      <main className="flex-1 w-full max-w-[1600px] mx-auto p-3 sm:p-5 lg:p-6">
         <Outlet />
       </main>
     </div>

@@ -1,0 +1,18 @@
+# Dependencies
+node_modules/
+frontend/node_modules/
+
+# Database backups and temp files
+prisma/*.backup*
+prisma/*.corrupted*
+prisma/*_bak*
+*.tmp*
+*.tmp[0-9]*
+
+# Scratch directory and logs
+scratch/
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db

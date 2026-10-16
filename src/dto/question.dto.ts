@@ -5,6 +5,7 @@ export interface StudentQuestionDTO {
   code: string;
   title: string;
   scenario: string;
+  testSet?: string | null;
   orderIndex: number;
   isActive: boolean;
 }
@@ -18,6 +19,7 @@ export interface ExpertQuestionDTO {
   statutoryElements: string[];
   relevantProvisions: string[];
   conceptVariations: string[];
+  testSet?: string | null;
   orderIndex: number;
   isActive: boolean;
 }
@@ -31,6 +33,7 @@ export interface AdminQuestionDTO {
   statutoryElements: string[];
   relevantProvisions: string[];
   conceptVariations: string[];
+  testSet?: string | null;
   orderIndex: number;
   isActive: boolean;
   isDemo: boolean;
@@ -49,6 +52,7 @@ export class QuestionDTO {
       code: q.code,
       title: q.title,
       scenario: q.scenario,
+      testSet: q.testSet,
       orderIndex: q.orderIndex,
       isActive: q.isActive,
     };
@@ -69,6 +73,7 @@ export class QuestionDTO {
       statutoryElements: safeParseJsonArray(q.statutoryElements),
       relevantProvisions: safeParseJsonArray(q.relevantProvisions),
       conceptVariations: safeParseJsonArray(q.conceptVariations),
+      testSet: q.testSet,
       orderIndex: q.orderIndex,
       isActive: q.isActive,
     };
@@ -87,6 +92,7 @@ export class QuestionDTO {
       statutoryElements: safeParseJsonArray(q.statutoryElements),
       relevantProvisions: safeParseJsonArray(q.relevantProvisions),
       conceptVariations: safeParseJsonArray(q.conceptVariations),
+      testSet: q.testSet,
       orderIndex: q.orderIndex,
       isActive: q.isActive,
       isDemo: q.isDemo,

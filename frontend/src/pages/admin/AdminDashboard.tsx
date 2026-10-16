@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../../api/client';
 import { AdminEvaluation } from '../../types';
+import { percentageToCustomFivePoint } from '../../utils/scoring';
 import { LoadingSkeleton } from '../../components/common/LoadingSkeleton';
 import { ErrorAlert } from '../../components/common/ErrorAlert';
 import {
@@ -150,7 +151,10 @@ export const AdminDashboard: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {recentEvaluations.map((e) => {
-                  const scoreVal = (e.finalScore ?? e.numericalScore * 0.05).toFixed(2);
+                  const scoreVal =
+                    e.roundedScore !== undefined
+                      ? e.roundedScore
+                      : percentageToCustomFivePoint(e.numericalScore);
                   const dateStr = new Date(e.createdAt).toLocaleDateString('en-US', {
                     month: 'short',
                     day: 'numeric',
@@ -191,7 +195,7 @@ export const AdminDashboard: React.FC = () => {
                       </td>
                       <td className="py-3 px-4 text-slate-500">{dateStr}</td>
                       <td className="py-3 px-4 font-mono font-semibold text-slate-900">
-                        {scoreVal} / 5.00
+                        {scoreVal} / 5
                       </td>
                       <td className="py-3 px-4">
                         <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-800 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">

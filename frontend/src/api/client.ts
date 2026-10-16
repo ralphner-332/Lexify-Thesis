@@ -21,6 +21,7 @@ import {
   SurveySummaryMetrics,
   ProgressionAnalytics,
   AcademicReportData,
+  SystemSettings,
 } from '../types';
 
 const API_BASE = '/api';
@@ -109,13 +110,21 @@ class ApiClient {
 
   // --- Questions APIs ---
   questions = {
-    list: async (activeOnly?: boolean) => {
-      const endpoint = activeOnly ? '/questions?active=true' : '/questions';
+    list: async (activeOnly?: boolean, testSet?: string) => {
+      const params = new URLSearchParams();
+      if (activeOnly) params.append('active', 'true');
+      if (testSet && testSet !== 'ALL') params.append('testSet', testSet);
+      const queryStr = params.toString();
+      const endpoint = queryStr ? `/questions?${queryStr}` : '/questions';
       return this.request<{ success: boolean; data: Question[] }>(endpoint);
     },
 
-    getAll: async () => {
-      return this.request<{ success: boolean; data: Question[] }>('/questions');
+    getAll: async (testSet?: string) => {
+      const params = new URLSearchParams();
+      if (testSet && testSet !== 'ALL') params.append('testSet', testSet);
+      const queryStr = params.toString();
+      const endpoint = queryStr ? `/questions?${queryStr}` : '/questions';
+      return this.request<{ success: boolean; data: Question[] }>(endpoint);
     },
 
     getById: async (id: string) => {
@@ -267,13 +276,15 @@ class ApiClient {
 
   // --- Phase 2: Assessment Session APIs ---
   sessions = {
-    getActive: async () => {
-      return this.request<{ success: boolean; data: AssessmentSession }>('/sessions/active');
+    getActive: async (testSet?: string) => {
+      const url = testSet ? `/sessions/active?testSet=${encodeURIComponent(testSet)}` : '/sessions/active';
+      return this.request<{ success: boolean; data: AssessmentSession }>(url);
     },
 
-    create: async () => {
+    create: async (testSet?: string) => {
       return this.request<{ success: boolean; data: AssessmentSession }>('/sessions/new', {
         method: 'POST',
+        body: JSON.stringify(testSet ? { testSet } : {}),
       });
     },
 
@@ -309,7 +320,73 @@ class ApiClient {
         }
       );
     },
+
+    reuseAnswersForV2: async (sessionId: string, data: { confirmedMockupClassification: boolean }) => {
+      return this.request<{
+        success: boolean;
+        jobId?: string;
+        resuming?: boolean;
+        alreadyReused: boolean;
+        isComplete?: boolean;
+        status?: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
+        message: string;
+        originalSessionId: string;
+        newSessionId: string;
+        sourceAgentVersion: string;
+        targetAgentVersion: string;
+        completedEvaluations?: number;
+        totalEvaluations?: number;
+        evaluationsCount?: number;
+        session?: any;
+      }>(`/sessions/${sessionId}/reuse-v2`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    },
+
+    // Backward-compatible alias
+    reuseAnswersForV4: async (sessionId: string, data: { confirmedMockupClassification: boolean }) => {
+      return this.sessions.reuseAnswersForV2(sessionId, data);
+    },
+
+    getReuseJobStatus: async (jobIdOrSessionId: string) => {
+      return this.request<{
+        success: boolean;
+        data: {
+          id: string;
+          sourceSessionId: string;
+          targetSessionId: string;
+          status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
+          totalEvaluations: number;
+          completedEvaluations: number;
+          currentModel: string | null;
+          currentQuestionCode: string | null;
+          errorMessage: string | null;
+          isDemo: boolean;
+          evaluationsCount: number;
+          isComplete: boolean;
+          isRunning: boolean;
+        };
+      }>(`/sessions/jobs/${jobIdOrSessionId}`);
+    },
+
+    getReusedMap: async () => {
+      return this.request<{
+        success: boolean;
+        data: Record<
+          string,
+          {
+            targetSessionId: string;
+            targetAgentVersion: string;
+            createdAt: string;
+            evaluationsCount: number;
+            isComplete: boolean;
+          }
+        >;
+      }>('/sessions/reused-v4-map');
+    },
   };
+
 
   // --- Phase 2: Evaluation APIs ---
   evaluations = {
@@ -562,7 +639,7 @@ class ApiClient {
     },
   };
 
-  // --- Multi-Model Configuration APIs (Model A, B, C) ---
+  // --- Multi-Model Configuration & Global Settings APIs ---
   models = {
     list: async () => {
       return this.request<{ success: boolean; data: any[] }>('/models');
@@ -581,6 +658,45 @@ class ApiClient {
         method: 'POST',
         body: JSON.stringify({ isLocked }),
       });
+    },
+    getSettings: async () => {
+      return this.request<{ success: boolean; data: SystemSettings }>('/models/settings/system');
+    },
+    updateSettings: async (settings: Partial<SystemSettings>) => {
+      return this.request<{ success: boolean; message: string; data: SystemSettings }>('/models/settings/system', {
+        method: 'PUT',
+        body: JSON.stringify(settings),
+      });
+    },
+
+    publishTestSet: async (testSet: string) => {
+      return this.request<{ success: boolean; message: string; data: SystemSettings }>(
+        '/models/settings/publish-test-set',
+        {
+          method: 'POST',
+          body: JSON.stringify({ testSet }),
+        }
+      );
+    },
+
+    archiveTestSet: async (testSet: string) => {
+      return this.request<{ success: boolean; message: string; data: SystemSettings }>(
+        '/models/settings/archive-test-set',
+        {
+          method: 'POST',
+          body: JSON.stringify({ testSet }),
+        }
+      );
+    },
+
+    draftTestSet: async (testSet: string) => {
+      return this.request<{ success: boolean; message: string; data: SystemSettings }>(
+        '/models/settings/draft-test-set',
+        {
+          method: 'POST',
+          body: JSON.stringify({ testSet }),
+        }
+      );
     },
   };
 
@@ -620,6 +736,95 @@ class ApiClient {
       );
     },
 
+    getClassRecordExcel: async (options?: { testSet?: string; isDemo?: boolean }) => {
+      const token = this.getToken();
+      const query = new URLSearchParams();
+      if (options?.testSet) query.append('testSet', options.testSet);
+      if (options?.isDemo !== undefined) query.append('isDemo', String(options.isDemo));
+      const res = await fetch(`${API_BASE}/exports/class-record-excel?${query.toString()}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Failed to download Class Record Excel');
+      }
+      return res.blob();
+    },
+
+    getClassRecordCSV: async (options?: { isDemo?: boolean }) => {
+      const token = this.getToken();
+      const query = new URLSearchParams();
+      if (options?.isDemo !== undefined) query.append('isDemo', String(options.isDemo));
+      const res = await fetch(`${API_BASE}/exports/class-record-csv?${query.toString()}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) throw new Error('Failed to download Class Record CSV');
+      return res.text();
+    },
+
+    getStudentQnAPDF: async (options?: { testSet?: string; isDemo?: boolean }) => {
+      const token = this.getToken();
+      const query = new URLSearchParams();
+      if (options?.testSet) query.append('testSet', options.testSet);
+      if (options?.isDemo !== undefined) query.append('isDemo', String(options.isDemo));
+      const res = await fetch(`${API_BASE}/exports/student-qna-pdf?${query.toString()}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Failed to download student questions and answers PDF');
+      }
+      return res.blob();
+    },
+
+    getStudentAnswersPDF: async (options?: { testSet?: string; studentId?: string; sessionId?: string }) => {
+      const token = this.getToken();
+      const query = new URLSearchParams();
+      if (options?.testSet) query.append('testSet', options.testSet);
+      if (options?.studentId) query.append('studentId', options.studentId);
+      if (options?.sessionId) query.append('sessionId', options.sessionId);
+      const res = await fetch(`${API_BASE}/exports/student-answers-pdf?${query.toString()}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Failed to download student answers PDF');
+      }
+      return res.blob();
+    },
+
+    getStudentQnAExport: async (options?: { testSet?: string; isDemo?: boolean }) => {
+      const token = this.getToken();
+      const query = new URLSearchParams();
+      if (options?.testSet) query.append('testSet', options.testSet);
+      if (options?.isDemo !== undefined) query.append('isDemo', String(options.isDemo));
+      const res = await fetch(`${API_BASE}/exports/student-qna-export?${query.toString()}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) throw new Error('Failed to download student questions and answers export');
+      return res.text();
+    },
+
+    getExpertGradingCSV: async (options?: { testSet?: string; isDemo?: boolean }) => {
+      const token = this.getToken();
+      const query = new URLSearchParams();
+      if (options?.testSet) query.append('testSet', options.testSet);
+      if (options?.isDemo !== undefined) query.append('isDemo', String(options.isDemo));
+      const res = await fetch(`${API_BASE}/exports/expert-grading-csv?${query.toString()}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) throw new Error('Failed to download Expert Grading export');
+      return res.text();
+    },
+
+    getExpertGradingJSON: async (options?: { isDemo?: boolean }) => {
+      const query = new URLSearchParams();
+      if (options?.isDemo !== undefined) query.append('isDemo', String(options.isDemo));
+      return this.request<{ success: boolean; data: any }>(
+        `/exports/expert-grading-json?${query.toString()}`
+      );
+    },
+
     getAcademicReport: async (options?: { isDemo?: boolean }) => {
       const query = new URLSearchParams();
       if (options?.isDemo !== undefined) query.append('isDemo', String(options.isDemo));
@@ -628,6 +833,60 @@ class ApiClient {
       );
     },
   };
+
+  // --- Phase 3: Multi-Level Model Comparison APIs ---
+  modelComparisons = {
+    getFilters: async () => {
+      return this.request<{ success: boolean; data: any }>('/comparisons/filters');
+    },
+
+    getQuestionLevel: async (params?: {
+      testSet?: string;
+      questionId?: string;
+      questionCode?: string;
+      agentVersionTag?: string;
+      isDemo?: boolean;
+      matchedOnly?: boolean;
+    }) => {
+      const query = new URLSearchParams();
+      if (params?.testSet) query.append('testSet', params.testSet);
+      if (params?.questionId) query.append('questionId', params.questionId);
+      if (params?.questionCode) query.append('questionCode', params.questionCode);
+      if (params?.agentVersionTag) query.append('agentVersionTag', params.agentVersionTag);
+      if (params?.isDemo !== undefined) query.append('isDemo', String(params.isDemo));
+      if (params?.matchedOnly !== undefined) query.append('matchedOnly', String(params.matchedOnly));
+      return this.request<{ success: boolean; data: any }>(`/comparisons/question-level?${query.toString()}`);
+    },
+
+    getSummative: async (params?: {
+      testSet?: string;
+      agentVersionTag?: string;
+      isDemo?: boolean;
+      matchedOnly?: boolean;
+    }) => {
+      const query = new URLSearchParams();
+      if (params?.testSet) query.append('testSet', params.testSet);
+      if (params?.agentVersionTag) query.append('agentVersionTag', params.agentVersionTag);
+      if (params?.isDemo !== undefined) query.append('isDemo', String(params.isDemo));
+      if (params?.matchedOnly !== undefined) query.append('matchedOnly', String(params.matchedOnly));
+      return this.request<{ success: boolean; data: any }>(`/comparisons/summative?${query.toString()}`);
+    },
+
+    downloadCsv: async (type: string, params?: { testSet?: string; agentVersionTag?: string; isDemo?: boolean }) => {
+      const token = this.getToken();
+      const query = new URLSearchParams();
+      query.append('type', type);
+      if (params?.testSet) query.append('testSet', params.testSet);
+      if (params?.agentVersionTag) query.append('agentVersionTag', params.agentVersionTag);
+      if (params?.isDemo !== undefined) query.append('isDemo', String(params.isDemo));
+      const res = await fetch(`${API_BASE}/comparisons/export-csv?${query.toString()}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) throw new Error('Failed to download CSV export');
+      return res.blob();
+    },
+  };
 }
+
 
 export const api = new ApiClient();

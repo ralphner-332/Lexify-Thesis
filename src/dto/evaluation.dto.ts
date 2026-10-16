@@ -1,12 +1,12 @@
+import { percentageToCustomFivePoint } from '../utils/scoring';
+
 export interface StudentEvaluationFeedbackDTO {
   id: string;
   questionId: string;
-  modelSlot?: string;
-  modelFamily?: string;
-  exactModelId?: string;
   numericalScore: number;
   weightedPercentage: number;
   finalScore: number;
+  roundedScore: number;
   maxScore: number;
   scoringBasis: string;
   criterionScores: Array<{
@@ -39,6 +39,7 @@ export interface AdminEvaluationDTO {
   studentEmail?: string;
   questionId: string;
   agentVersionId?: string;
+  agentVersionTag?: string;
   modelSlot: 'MODEL_A' | 'MODEL_B' | 'MODEL_C' | string;
   modelFamily: string;
   exactModelId: string;
@@ -49,6 +50,7 @@ export interface AdminEvaluationDTO {
   numericalScore: number;
   weightedPercentage: number;
   finalScore: number;
+  roundedScore: number;
   maxScore: number;
   scoringBasis: string;
   criterionScores: any[];
@@ -74,11 +76,13 @@ export interface AdminEvaluationDTO {
 export class EvaluationDTO {
   /**
    * Strictly sanitizes Evaluation for student diagnostic feedback.
-   * Strips model reference answers, statutory keys, and system prompts.
+   * Strips model names, LLM identifiers, reference answers, and system prompts.
+   * Presents evaluations purely as Lexify Legal Assessment.
    */
   static toStudentDTO(evalRecord: any): StudentEvaluationFeedbackDTO {
     const weightedPercentage = evalRecord.numericalScore ?? 0;
     const finalScore = Number((weightedPercentage * 0.05).toFixed(4));
+    const roundedScore = percentageToCustomFivePoint(weightedPercentage);
     const criteria: any[] = safeParseJson(evalRecord.criterionScores, []);
 
     const formScore = criteria.find((c) => c.criterionName?.toLowerCase() === 'form')?.score;
@@ -87,17 +91,21 @@ export class EvaluationDTO {
     const applicationScore = criteria.find((c) => c.criterionName?.toLowerCase() === 'application')?.score;
     const conclusionScore = criteria.find((c) => c.criterionName?.toLowerCase() === 'conclusion')?.score;
 
+    // Clean model provenance prefixes from scoringBasis for student presentation
+    let cleanScoringBasis = evalRecord.scoringBasis || '';
+    cleanScoringBasis = cleanScoringBasis
+      .replace(/^\[(Meta Llama|Llama|Microsoft Phi|Phi|Google Gemma|Gemma|MODEL_[ABC])[^\]]*\]\s*/i, '[Lexify Assessment] ')
+      .trim();
+
     return {
       id: evalRecord.id,
       questionId: evalRecord.questionId,
-      modelSlot: evalRecord.modelSlot,
-      modelFamily: evalRecord.modelFamily,
-      exactModelId: evalRecord.exactModelId,
       numericalScore: weightedPercentage,
       weightedPercentage,
       finalScore,
+      roundedScore,
       maxScore: evalRecord.maxScore ?? 100,
-      scoringBasis: evalRecord.scoringBasis,
+      scoringBasis: cleanScoringBasis,
       criterionScores: criteria,
       strengths: safeParseJson(evalRecord.strengths, []),
       missingElements: safeParseJson(evalRecord.missingElements, []),
@@ -114,12 +122,14 @@ export class EvaluationDTO {
     };
   }
 
+
   /**
    * Formats Evaluation for researcher admin inspection.
    */
   static toAdminDTO(evalRecord: any): AdminEvaluationDTO {
     const weightedPercentage = evalRecord.numericalScore ?? 0;
     const finalScore = Number((weightedPercentage * 0.05).toFixed(4));
+    const roundedScore = percentageToCustomFivePoint(weightedPercentage);
     const criteria: any[] = safeParseJson(evalRecord.criterionScores, []);
 
     const formScore = criteria.find((c) => c.criterionName?.toLowerCase() === 'form')?.score;
@@ -136,6 +146,7 @@ export class EvaluationDTO {
       studentEmail: evalRecord.student?.email,
       questionId: evalRecord.questionId,
       agentVersionId: evalRecord.agentVersionId,
+      agentVersionTag: evalRecord.agentVersion?.versionTag,
       modelSlot: evalRecord.modelSlot || 'MODEL_A',
       modelFamily: evalRecord.modelFamily || 'Llama 3.1',
       exactModelId: evalRecord.exactModelId || 'meta-llama/llama-3.1-8b-instruct',
@@ -146,6 +157,7 @@ export class EvaluationDTO {
       numericalScore: weightedPercentage,
       weightedPercentage,
       finalScore,
+      roundedScore,
       maxScore: evalRecord.maxScore ?? 100,
       scoringBasis: evalRecord.scoringBasis,
       criterionScores: criteria,

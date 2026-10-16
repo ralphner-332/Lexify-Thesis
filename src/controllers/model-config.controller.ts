@@ -50,4 +50,57 @@ export class ModelConfigController {
       res.status(400).json({ success: false, message: error.message });
     }
   }
+
+  static async getSettings(req: Request, res: Response): Promise<void> {
+    try {
+      const settings = await ModelConfigService.getSystemSettings();
+      res.json({ success: true, data: settings });
+    } catch (error: any) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  }
+
+  static async updateSettings(req: Request, res: Response): Promise<void> {
+    try {
+      const adminUserId = (req as any).user?.id;
+      const updated = await ModelConfigService.updateSystemSettings(req.body, adminUserId);
+      res.json({ success: true, message: 'System settings updated.', data: updated });
+    } catch (error: any) {
+      res.status(400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async publishTestSet(req: Request, res: Response): Promise<void> {
+    try {
+      const { testSet } = req.body;
+      const adminUserId = (req as any).user?.id;
+      const updated = await ModelConfigService.publishTestSet(testSet, adminUserId);
+      res.json({ success: true, message: `Test set ${testSet} published successfully.`, data: updated });
+    } catch (error: any) {
+      res.status(400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async archiveTestSet(req: Request, res: Response): Promise<void> {
+    try {
+      const { testSet } = req.body;
+      const adminUserId = (req as any).user?.id;
+      const updated = await ModelConfigService.archiveTestSet(testSet, adminUserId);
+      res.json({ success: true, message: `Test set ${testSet} archived successfully.`, data: updated });
+    } catch (error: any) {
+      res.status(400).json({ success: false, message: error.message });
+    }
+  }
+
+  static async draftTestSet(req: Request, res: Response): Promise<void> {
+    try {
+      const { testSet } = req.body;
+      const adminUserId = (req as any).user?.id;
+      const updated = await ModelConfigService.draftTestSet(testSet, adminUserId);
+      res.json({ success: true, message: `Test set ${testSet} marked as draft.`, data: updated });
+    } catch (error: any) {
+      res.status(400).json({ success: false, message: error.message });
+    }
+  }
 }
+

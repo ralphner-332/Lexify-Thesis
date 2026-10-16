@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams, useParams } from 'react-router-dom';
 import { api } from '../../api/client';
 import { AdminEvaluation, Question } from '../../types';
+import { percentageToCustomFivePoint } from '../../utils/scoring';
 import {
   FileText,
   Cpu,
@@ -222,9 +223,15 @@ export const MultiModelSubmissionsExplorer: React.FC = () => {
             const isExpanded = expandedRow === key;
 
             const modelScores = [
-              sub.modelA ? sub.modelA.numericalScore * 0.05 : null,
-              sub.modelB ? sub.modelB.numericalScore * 0.05 : null,
-              sub.modelC ? sub.modelC.numericalScore * 0.05 : null,
+              sub.modelA
+                ? (sub.modelA.roundedScore ?? percentageToCustomFivePoint(sub.modelA.numericalScore))
+                : null,
+              sub.modelB
+                ? (sub.modelB.roundedScore ?? percentageToCustomFivePoint(sub.modelB.numericalScore))
+                : null,
+              sub.modelC
+                ? (sub.modelC.roundedScore ?? percentageToCustomFivePoint(sub.modelC.numericalScore))
+                : null,
             ].filter((g) => g !== null) as number[];
 
             const maxDelta =
@@ -354,7 +361,10 @@ const ModelColumn: React.FC<ModelColumnProps> = ({
   const conclusionScore = evalRecord.conclusionScore ?? criteria.find((c) => c.criterionName?.toLowerCase() === 'conclusion')?.score ?? 0;
 
   const rawScore = evalRecord.numericalScore;
-  const finalScore = (evalRecord.finalScore ?? (rawScore * 0.05)).toFixed(2);
+  const finalScore =
+    evalRecord.roundedScore !== undefined
+      ? evalRecord.roundedScore
+      : percentageToCustomFivePoint(rawScore);
 
   return (
     <div className="p-4 space-y-3 text-xs flex flex-col justify-between">
@@ -367,7 +377,7 @@ const ModelColumn: React.FC<ModelColumnProps> = ({
           </div>
           <div className="text-right">
             <span className="text-sm font-bold text-slate-900">{finalScore}</span>
-            <span className="text-[10px] text-slate-400 block">/ 5.00 ({rawScore}%)</span>
+            <span className="text-[10px] text-slate-400 block">/ 5 ({rawScore}%)</span>
           </div>
         </div>
 
@@ -451,7 +461,9 @@ const DetailedEvaluationModal: React.FC<DetailedModalProps> = ({
   const conclusionScore = currentEval?.conclusionScore ?? criteria.find((c) => c.criterionName?.toLowerCase() === 'conclusion')?.score ?? 0;
 
   const rawWeightedPct = currentEval ? currentEval.numericalScore : 0;
-  const calculatedFinal = (currentEval?.finalScore ?? rawWeightedPct * 0.05).toFixed(2);
+  const calculatedFinal = currentEval
+    ? (currentEval.roundedScore ?? percentageToCustomFivePoint(rawWeightedPct))
+    : 0;
 
   const lexical = currentEval?.lexicalAnalysis || {};
   const semantic = currentEval?.semanticAnalysis || {};
@@ -499,7 +511,7 @@ const DetailedEvaluationModal: React.FC<DetailedModalProps> = ({
             <div className="text-right">
               <span className="text-xs text-slate-500 mr-2">Stored Score:</span>
               <span className="font-mono font-bold text-base text-slate-900">
-                {calculatedFinal} / 5.00
+                {calculatedFinal} / 5
               </span>
             </div>
           </div>
@@ -536,7 +548,7 @@ const DetailedEvaluationModal: React.FC<DetailedModalProps> = ({
             <div className="px-3.5 py-2 bg-slate-100/70 border-b border-slate-200 flex items-center justify-between text-xs font-semibold text-slate-700">
               <span>Criterion Breakdown (SCORING CRITERIA AND INSTRUCTION.pdf)</span>
               <span className="text-[11px] font-mono text-slate-600 font-normal">
-                Weighted: <strong className="text-slate-900">{rawWeightedPct}%</strong> · Final: <strong className="text-slate-900">{calculatedFinal} / 5.00</strong>
+                Weighted: <strong className="text-slate-900">{rawWeightedPct}%</strong> · Final: <strong className="text-slate-900">{calculatedFinal} / 5</strong>
               </span>
             </div>
             <div className="grid grid-cols-5 divide-x divide-slate-200 text-center text-xs">
@@ -592,7 +604,9 @@ const DetailedEvaluationModal: React.FC<DetailedModalProps> = ({
                 >
                   <span>{slotName}</span>
                   <span className="font-mono text-[11px]">
-                    {evalForSlot ? `(${(evalForSlot.finalScore ?? evalForSlot.numericalScore * 0.05).toFixed(2)})` : '(N/A)'}
+                    {evalForSlot
+                      ? `(${evalForSlot.roundedScore ?? percentageToCustomFivePoint(evalForSlot.numericalScore)})`
+                      : '(N/A)'}
                   </span>
                   {isOrig && (
                     <span className="text-[9px] bg-slate-200 text-slate-700 px-1 py-0.2 rounded uppercase">
@@ -627,8 +641,8 @@ const DetailedEvaluationModal: React.FC<DetailedModalProps> = ({
 
                 <div className="text-right">
                   <span className="text-xl font-bold text-slate-900 font-mono">
-                    {(currentEval.finalScore ?? currentEval.numericalScore * 0.05).toFixed(2)}{' '}
-                    <span className="text-xs text-slate-500 font-normal">/ 5.00 ({currentEval.numericalScore}%)</span>
+                    {currentEval.roundedScore ?? percentageToCustomFivePoint(currentEval.numericalScore)}{' '}
+                    <span className="text-xs text-slate-500 font-normal">/ 5 ({currentEval.numericalScore}%)</span>
                   </span>
                 </div>
               </div>

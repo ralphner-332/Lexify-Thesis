@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../../api/client';
 import { SessionReviewChecklist } from '../../types';
 import { LoadingSkeleton } from '../../components/common/LoadingSkeleton';
@@ -15,6 +15,10 @@ import {
 
 export const ReviewAnswersPage: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const sessionIdParam = searchParams.get('sessionId') || undefined;
+  const testSetParam = searchParams.get('testSet') || undefined;
+
   const [reviewData, setReviewData] = useState<SessionReviewChecklist | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [submitting, setSubmitting] = useState<boolean>(false);
@@ -25,13 +29,30 @@ export const ReviewAnswersPage: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const activeSession = await api.sessions.getActive();
-      if (activeSession.data.status === 'SUBMITTED') {
-        navigate('/student/assessment/feedback');
-        return;
+
+      let targetSessionId: string;
+      if (sessionIdParam) {
+        const sessionRes = await api.sessions.getById(sessionIdParam);
+        if (sessionRes.data.status === 'SUBMITTED') {
+          navigate(`/student/assessment/feedback?sessionId=${sessionIdParam}`);
+          return;
+        }
+        targetSessionId = sessionIdParam;
+      } else {
+        const activeSession = await api.sessions.getActive(testSetParam);
+        if (activeSession.data.status === 'SUBMITTED') {
+          navigate(`/student/assessment/feedback?sessionId=${activeSession.data.id}`);
+          return;
+        }
+        targetSessionId = activeSession.data.id;
       }
 
-      const res = await api.sessions.getReview(activeSession.data.id);
+      const res = await api.sessions.getReview(targetSessionId);
+      if (res.data?.session?.questions) {
+        res.data.session.questions.sort((a: any, b: any) =>
+          (a.code || '').localeCompare(b.code || '', undefined, { numeric: true })
+        );
+      }
       setReviewData(res.data);
     } catch (err: any) {
       setError(err.message || 'Failed to load session review checklist');
@@ -42,7 +63,7 @@ export const ReviewAnswersPage: React.FC = () => {
 
   useEffect(() => {
     fetchReview();
-  }, []);
+  }, [sessionIdParam, testSetParam]);
 
   const handleFinalSubmit = async () => {
     if (!reviewData) return;
@@ -98,7 +119,7 @@ export const ReviewAnswersPage: React.FC = () => {
           </div>
 
           <button
-            onClick={() => navigate('/student/assessment')}
+            onClick={() => navigate(`/student/assessment?sessionId=${session.id}`)}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-md text-xs font-medium transition self-start sm:self-center"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
@@ -180,7 +201,7 @@ export const ReviewAnswersPage: React.FC = () => {
                 </div>
 
                 <button
-                  onClick={() => navigate('/student/assessment')}
+                  onClick={() => navigate(`/student/assessment?sessionId=${session.id}`)}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium rounded-md transition whitespace-nowrap self-start md:self-center"
                 >
                   <Edit3 className="w-3.5 h-3.5 text-slate-400" />

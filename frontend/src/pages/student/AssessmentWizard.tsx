@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../../api/client';
 import { AssessmentSession, StudentQuestionItem } from '../../types';
 import { LoadingSkeleton } from '../../components/common/LoadingSkeleton';
@@ -14,6 +14,10 @@ import {
 
 export const AssessmentWizard: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const testSetParam = searchParams.get('testSet') || undefined;
+  const sessionIdParam = searchParams.get('sessionId') || undefined;
+
   const [session, setSession] = useState<AssessmentSession | null>(null);
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -27,16 +31,26 @@ export const AssessmentWizard: React.FC = () => {
   const fetchSession = async () => {
     try {
       setLoading(true);
-      const res = await api.sessions.getActive();
-      if (res.data.status === 'SUBMITTED') {
-        navigate('/student/assessment/feedback');
+      setError(null);
+      let sessionData: AssessmentSession;
+
+      if (sessionIdParam) {
+        const res = await api.sessions.getById(sessionIdParam);
+        sessionData = res.data;
+      } else {
+        const res = await api.sessions.getActive(testSetParam);
+        sessionData = res.data;
+      }
+
+      if (sessionData.status === 'SUBMITTED') {
+        navigate(`/student/assessment/feedback?sessionId=${sessionData.id}`);
         return;
       }
 
-      setSession(res.data);
+      setSession(sessionData);
 
       const initialAnswers: Record<string, string> = {};
-      res.data.questions.forEach((q) => {
+      sessionData.questions.forEach((q) => {
         initialAnswers[q.id] = q.draftAnswer || '';
       });
       setAnswers(initialAnswers);
@@ -49,7 +63,7 @@ export const AssessmentWizard: React.FC = () => {
 
   useEffect(() => {
     fetchSession();
-  }, []);
+  }, [testSetParam, sessionIdParam]);
 
   // Server-side draft saver
   const saveDraftToServer = useCallback(
@@ -98,7 +112,7 @@ export const AssessmentWizard: React.FC = () => {
     if (currentIndex < session.questions.length - 1) {
       setCurrentIndex(currentIndex + 1);
     } else {
-      navigate('/student/assessment/review');
+      navigate(`/student/assessment/review?sessionId=${session.id}`);
     }
   };
 
@@ -180,7 +194,7 @@ export const AssessmentWizard: React.FC = () => {
           <button
             onClick={() => {
               saveDraftToServer(currentQuestion.id, currentAnswer);
-              navigate('/student/assessment/review');
+              navigate(`/student/assessment/review?sessionId=${session.id}`);
             }}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-medium rounded-md transition"
           >

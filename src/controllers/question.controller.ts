@@ -5,8 +5,9 @@ export class QuestionController {
   static async list(req: Request, res: Response) {
     try {
       const role = req.user?.role || 'STUDENT';
-      const includeInactive = req.query.includeInactive === 'true' && role === 'ADMIN';
-      const questions = await QuestionService.listQuestions(role, includeInactive);
+      const includeInactive = role === 'ADMIN' && req.query.activeOnly !== 'true';
+      const testSet = typeof req.query.testSet === 'string' ? req.query.testSet : undefined;
+      const questions = await QuestionService.listQuestions(role, includeInactive, testSet);
       return res.status(200).json({ success: true, data: questions });
     } catch (error: any) {
       return res.status(500).json({ success: false, error: error.message || 'Failed to list questions' });
@@ -25,7 +26,7 @@ export class QuestionController {
 
   static async create(req: Request, res: Response) {
     try {
-      const { code, title, scenario, modelAnswer, statutoryElements, relevantProvisions, conceptVariations, orderIndex, isActive, isDemo } = req.body;
+      const { code, title, scenario, modelAnswer, statutoryElements, relevantProvisions, conceptVariations, testSet, orderIndex, isActive, isDemo } = req.body;
       if (!code || !title || !scenario || !modelAnswer) {
         return res.status(400).json({
           success: false,
@@ -42,6 +43,7 @@ export class QuestionController {
           statutoryElements: statutoryElements || [],
           relevantProvisions: relevantProvisions || [],
           conceptVariations: conceptVariations || [],
+          testSet: testSet || 'TEST_1',
           orderIndex,
           isActive,
           isDemo,
