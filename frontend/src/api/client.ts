@@ -42,18 +42,35 @@ class ApiClient {
       headers['Authorization'] = `Bearer ${token}`;
     }
 
-    const response = await fetch(`${API_BASE}${endpoint}`, {
-      ...options,
-      headers,
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.error || `HTTP error ${response.status}`);
+    let response: Response;
+    try {
+      response = await fetch(`${API_BASE}${endpoint}`, {
+        ...options,
+        headers,
+      });
+    } catch {
+      throw new Error('Cannot connect to backend server. Please ensure the backend is running on port 5000 (npm run dev in project root).');
     }
 
-    return data;
+    let data: any = {};
+    const text = await response.text();
+    if (text) {
+      try {
+        data = JSON.parse(text);
+      } catch {
+        data = { error: text };
+      }
+    }
+
+    if (!response.ok) {
+      const fallbackMsg =
+        response.status >= 502 && response.status <= 504
+          ? `Backend server is not reachable (HTTP ${response.status}). Please ensure the backend is running on port 5000.`
+          : `HTTP error ${response.status}`;
+      throw new Error(data?.error || fallbackMsg);
+    }
+
+    return data as T;
   }
 
   // --- Auth APIs ---
